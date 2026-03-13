@@ -30,6 +30,19 @@
     "publisher": {"@type": "Organization", "name": "{{ site_name }}"}
   }
   </script>
+
+  <!-- MathJax Configuration -->
+  <script>
+  /* MathJax config must be defined BEFORE the engine script loads */
+  window.MathJax = {
+    tex: { inlineMath: [['$','$'], ['\\(','\\)']] },
+    startup: {
+      pageReady: () => MathJax.startup.defaultPageReady().then(() => {
+        document.dispatchEvent(new Event('mathjax:ready'));
+      })
+    }
+  };
+  </script>
 {% endblock %}
 
 {% block content %}
@@ -54,4 +67,40 @@
     {{ content | safe }}
   </div>
 </article>
+{% endblock %}
+
+{% block scripts %}
+<script type="module">
+(async () => {
+  const root = document.querySelector('.prose'); // Use .prose for article body
+  if (!root) return;
+  const rawText = root.innerText;
+  const hasMath  = rawText.includes('$$') || rawText.includes('\\(') || rawText.includes('\\[');
+  const hasEmoji = /:[A-Za-z0-9_+-]+:/.test(rawText);
+  if (!hasMath && !hasEmoji) return;
+
+  // -- Emoji loader (leverages markdown-emoji built-in async helpers) --
+  async function renderEmojis() {
+    try {
+      const mod = await import('/assets/vendor/emoji/index.js');
+      const [emojiMap, aliases] = await Promise.all([
+        mod.loadDefaultEmojiMap(),
+        mod.loadDefaultAliasesData().then(d => mod.normalizeAliases(d))
+      ]);
+      mod.applyEmojiShortcodes(root, { emojiMap, aliases });
+    } catch (e) { console.warn('[janus] emoji:', e); }
+  }
+
+  // -- Orchestration: MathJax first -> Emoji second --
+  if (hasMath) {
+    const src = '/assets/vendor/mathjax/tex-mml-chtml.js';
+    const s = document.createElement('script');
+    s.src = src; s.async = true;
+    document.head.appendChild(s);
+    if (hasEmoji) document.addEventListener('mathjax:ready', renderEmojis, { once: true });
+  } else {
+    renderEmojis();
+  }
+})();
+</script>
 {% endblock %}
