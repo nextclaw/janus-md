@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}{{ meta.title }} - {{ site_name }}{% endblock %}
+{% block description %}{{ meta.description }}{% endblock %}
+
+{% block og_type %}article{% endblock %}
+{% block og_title %}{{ meta.title }}{% endblock %}
+{% block og_description %}{{ meta.description }}{% endblock %}
+{% block og_extra %}
+  <meta property="article:published_time" content="{{ meta.date }}" />
+  {% if meta.tags %}{% for tag in meta.tags %}<meta property="article:tag" content="{{ tag }}" />
+  {% endfor %}{% endif %}
+  {% if meta.cover %}<meta property="og:image" content="{{ meta.cover }}" />{% endif %}
+{% endblock %}
+
+{% block alternate %}
+  <link rel="alternate" type="text/markdown" href="/{{ slug }}.md" />
+{% endblock %}
+
+{% block head_extra %}
+  <!-- JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "{{ meta.title }}",
+    "description": "{{ meta.description }}",
+    "datePublished": "{{ meta.date }}",
+    {% if meta.author %}"author": {"@type": "Person", "name": "{{ meta.author }}"},{% endif %}
+    "publisher": {"@type": "Organization", "name": "{{ site_name }}"}
+  }
+  </script>
+{% endblock %}
+
+{% block content %}
+<article>
+  <header class="article-header">
+    <h1>{{ meta.title }}</h1>
+    <div class="article-meta">
+      <span class="meta-item">📅 {{ meta.date }}</span>
+      {% if meta.author %}<span class="meta-item">✍️ {{ meta.author }}</span>{% endif %}
+      <a class="meta-item" href="/{{ slug }}.md" title="View Markdown source">📄 .md</a>
+      {% if meta.tags %}
+      <div class="article-tags">
+        {% for tag in meta.tags %}
+        <span class="tag">#{{ tag }}</span>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </header>
+
+  <div class="prose">
+    {{ content | safe }}
+  </div>
+</article>
+{% endblock %}

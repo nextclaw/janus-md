@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="{{ site_language }}" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}{{ site_name }}{% endblock %}</title>
+  <meta name="description" content="{% block description %}{{ site_description }}{% endblock %}" />
+
+  <!-- Open Graph -->
+  <meta property="og:type"        content="{% block og_type %}website{% endblock %}" />
+  <meta property="og:title"       content="{% block og_title %}{{ site_name }}{% endblock %}" />
+  <meta property="og:description" content="{% block og_description %}{{ site_description }}{% endblock %}" />
+  <meta property="og:site_name"   content="{{ site_name }}" />
+  {% block og_extra %}{% endblock %}
+
+  <!-- Markdown alternate link (per-article) -->
+  {% block alternate %}{% endblock %}
+
+  <!-- Atom feed auto-discovery -->
+  <link rel="alternate" type="application/atom+xml" title="{{ site_name }} Feed" href="/feed.xml" />
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="/assets/css/style.css" />
+  <link rel="stylesheet" href="/assets/css/codehilite.css" />
+
+  {% block head_extra %}{% endblock %}
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <a href="/" class="site-logo">
+        <span class="logo-icon">J</span>
+        <span>{{ site_name }}</span>
+      </a>
+      <nav class="site-nav">
+        <a href="/">Home</a>
+        <a href="/feed.xml" title="RSS Feed">Feed</a>
+        <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme">🌙</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="site-main">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    <p>
+      Powered by <a href="https://github.com/nextclaw/janus-md" target="_blank" rel="noopener">Janus-MD</a>
+      &middot; HTML for humans, Markdown for AI
+    </p>
+  </footer>
+
+  <script src="/assets/js/main.js"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

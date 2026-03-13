@@ -1,0 +1,25 @@
+[site]
+url         = "https://example.com"   # ← 改为你的域名（无末尾斜杠）
+name        = "My Site"
+description = "A dual-state static site powered by Janus-MD"
+language    = "zh-CN"
+author      = "Your Name"
+
+[build]
+articles_dir  = "articles"    # 支持子目录，递归扫描 .md 文件
+templates_dir = "templates"
+static_dir    = "static"
+dist_dir      = "dist"
+
+[feed]
+max_entries = 20              # Atom feed 最多收录条目数
+
+[markdown]
+# python-markdown 扩展列表
+extensions = [
+  "extra",        # tables, fenced_code, footnotes, attr_list, def_list
+  "codehilite",   # Pygments 语法高亮
+  "toc",          # 自动生成目录 + heading 锚点
+  "sane_lists",   # 更符合直觉的列表行为
+  "smarty",       # 智能引号、破折号
+]

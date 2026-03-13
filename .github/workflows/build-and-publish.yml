@@ -1,0 +1,35 @@
+name: Build & Publish
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:   # allow manual trigger from GitHub UI
+
+permissions:
+  contents: write      # needed for peaceiris/actions-gh-pages to push sites branch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+
+      - name: Build site
+        run: uv run build.py
+        env:
+          SITE_URL: ${{ vars.SITE_URL }}   # set in repo Settings → Variables
+
+      - name: Deploy to sites branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          publish_branch: sites
+          force_orphan: true     # keep sites branch clean (no history bloat)
+          commit_message: "deploy: ${{ github.sha }}"
