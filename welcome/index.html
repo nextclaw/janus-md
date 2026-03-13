@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Welcome to Janus-MD - My Site</title>
+  <meta name="description" content="A dual-state static site template — HTML for humans, Markdown for AI." />
+
+  <!-- Open Graph -->
+  <meta property="og:type"        content="article" />
+  <meta property="og:title"       content="Welcome to Janus-MD" />
+  <meta property="og:description" content="A dual-state static site template — HTML for humans, Markdown for AI." />
+  <meta property="og:site_name"   content="My Site" />
+  
+  <meta property="article:published_time" content="2026-03-14" />
+  <meta property="article:tag" content="intro" />
+  <meta property="article:tag" content="getting-started" />
+  
+  
+
+
+  <!-- Markdown alternate link (per-article) -->
+  
+  <link rel="alternate" type="text/markdown" href="/welcome.md" />
+
+
+  <!-- Atom feed auto-discovery -->
+  <link rel="alternate" type="application/atom+xml" title="My Site Feed" href="/feed.xml" />
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="/assets/css/style.css" />
+  <link rel="stylesheet" href="/assets/css/codehilite.css" />
+
+  
+  <!-- JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "Welcome to Janus-MD",
+    "description": "A dual-state static site template — HTML for humans, Markdown for AI.",
+    "datePublished": "2026-03-14",
+    "author": {"@type": "Person", "name": "Janus-MD"},
+    "publisher": {"@type": "Organization", "name": "My Site"}
+  }
+  </script>
+
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <a href="/" class="site-logo">
+        <span class="logo-icon">J</span>
+        <span>My Site</span>
+      </a>
+      <nav class="site-nav">
+        <a href="/">Home</a>
+        <a href="/feed.xml" title="RSS Feed">Feed</a>
+        <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme">🌙</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="site-main">
+    
+<article>
+  <header class="article-header">
+    <h1>Welcome to Janus-MD</h1>
+    <div class="article-meta">
+      <span class="meta-item">📅 2026-03-14</span>
+      <span class="meta-item">✍️ Janus-MD</span>
+      <a class="meta-item" href="/welcome.md" title="View Markdown source">📄 .md</a>
+      
+      <div class="article-tags">
+        
+        <span class="tag">#intro</span>
+        
+        <span class="tag">#getting-started</span>
+        
+      </div>
+      
+    </div>
+  </header>
+
+  <div class="prose">
+    <h1 id="welcome-to-janus-md">Welcome to Janus-MD</h1>
+<p>This is your first article. Delete it and start writing your own.</p>
+<p><strong>Janus-MD</strong> generates two versions of every article:</p>
+<ul>
+<li><code>/&lt;slug&gt;/index.html</code> — rendered HTML for browsers</li>
+<li><code>/&lt;slug&gt;.md</code> — raw Markdown for AI agents &amp; tools</li>
+</ul>
+<h2 id="task-status-markers">Task Status Markers</h2>
+<p>Use these markers anywhere in your Markdown to track work:</p>
+<ul>
+<li><span class="task-marker task-todo" title="未开始">[ ]</span> This task has <strong>not started</strong> yet</li>
+<li><span class="task-marker task-wip" title="进行中">[-]</span> This task is <strong>in progress</strong></li>
+<li><span class="task-marker task-done" title="已完成">[x]</span> This task is <strong>done</strong></li>
+<li><span class="task-marker task-blocked" title="阻塞中">[!]</span> This task is <strong>blocked</strong></li>
+<li><span class="task-marker task-deferred" title="延后/放弃">[~]</span> This task is <strong>deferred or abandoned</strong></li>
+</ul>
+<p>They render as styled inline badges and are preserved verbatim in <code>.md</code> output.</p>
+<h2 id="nested-articles">Nested Articles</h2>
+<p>Place articles in subdirectories for organized content:</p>
+<div class="codehilite"><pre><span></span><code>articles/
+  2026/
+    03/
+      my-post.md        → /2026/03/my-post
+  tutorials/
+    getting-started.md  → /tutorials/getting-started
+</code></pre></div>
+
+<h2 id="code-highlighting">Code Highlighting</h2>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">greet</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Hello, </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">!&quot;</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">greet</span><span class="p">(</span><span class="s2">&quot;Janus&quot;</span><span class="p">))</span>
+</code></pre></div>
+
+<h2 id="next-steps">Next Steps</h2>
+<ul>
+<li><span class="task-marker task-done" title="已完成">[x]</span> Clone the template</li>
+<li><span class="task-marker task-wip" title="进行中">[-]</span> Edit <code>janus.config.toml</code> with your site info</li>
+<li><span class="task-marker task-todo" title="未开始">[ ]</span> Write your first article in <code>articles/</code></li>
+<li><span class="task-marker task-todo" title="未开始">[ ]</span> Push to GitHub and watch CI build your site</li>
+<li><span class="task-marker task-todo" title="未开始">[ ]</span> Configure DNS and enjoy your dual-state site</li>
+</ul>
+  </div>
+</article>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>
+      Powered by <a href="https://github.com/nextclaw/janus-md" target="_blank" rel="noopener">Janus-MD</a>
+      &middot; HTML for humans, Markdown for AI
+    </p>
+  </footer>
+
+  <script src="/assets/js/main.js"></script>
+  
+<script type="module">
+(async () => {
+  const root = document.querySelector('.prose');
+  if (!root) return;
+  const rawText = root.innerText;
+  const hasMath  = rawText.includes('$');
+  const hasEmoji = /:[A-Za-z0-9_+-]+:/.test(rawText);
+  if (!hasMath && !hasEmoji) return;
+
+  async function renderEmojis() {
+    try {
+      const mod = await import('/assets/vendor/emoji/index.js');
+      const [emojiMap, aliases] = await Promise.all([
+        mod.loadDefaultEmojiMap(),
+        mod.loadDefaultAliasesData().then(d => mod.normalizeAliases(d))
+      ]);
+      mod.applyEmojiShortcodes(root, { emojiMap, aliases });
+    } catch (e) { console.warn('[janus] emoji:', e); }
+  }
+
+  if (hasMath) {
+    // Inject MathJax config before loading the engine script
+    window.MathJax = {
+      tex: { inlineMath: [['$','$'], ['\\(','\\)']] },
+      startup: {
+        pageReady: () => MathJax.startup.defaultPageReady().then(() => {
+          document.dispatchEvent(new Event('mathjax:ready'));
+        })
+      }
+    };
+    const s = document.createElement('script');
+    s.src = '/assets/vendor/mathjax/tex-mml-chtml.js';
+    s.async = true;
+    document.head.appendChild(s);
+    if (hasEmoji) document.addEventListener('mathjax:ready', renderEmojis, { once: true });
+  } else {
+    renderEmojis();
+  }
+})();
+</script>
+
+</body>
+</html>

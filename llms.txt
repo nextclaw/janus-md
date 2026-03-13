@@ -1,0 +1,8 @@
+# My Site
+
+> A dual-state static site powered by Janus-MD
+
+## Articles
+
+- [Project Roadmap](/meta/roadmap.md): Tracking the development milestones of this site.
+- [Welcome to Janus-MD](/welcome.md): A dual-state static site template — HTML for humans, Markdown for AI.

@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+
+Sitemap: /sitemap.xml
+
+# AI agent content discovery — https://llmstxt.org/
+# Llms-Txt: /llms.txt

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Project Roadmap - My Site</title>
+  <meta name="description" content="Tracking the development milestones of this site." />
+
+  <!-- Open Graph -->
+  <meta property="og:type"        content="article" />
+  <meta property="og:title"       content="Project Roadmap" />
+  <meta property="og:description" content="Tracking the development milestones of this site." />
+  <meta property="og:site_name"   content="My Site" />
+  
+  <meta property="article:published_time" content="2026-03-14" />
+  <meta property="article:tag" content="roadmap" />
+  <meta property="article:tag" content="project" />
+  
+  
+
+
+  <!-- Markdown alternate link (per-article) -->
+  
+  <link rel="alternate" type="text/markdown" href="/meta/roadmap.md" />
+
+
+  <!-- Atom feed auto-discovery -->
+  <link rel="alternate" type="application/atom+xml" title="My Site Feed" href="/feed.xml" />
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="/assets/css/style.css" />
+  <link rel="stylesheet" href="/assets/css/codehilite.css" />
+
+  
+  <!-- JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "Project Roadmap",
+    "description": "Tracking the development milestones of this site.",
+    "datePublished": "2026-03-14",
+    "author": {"@type": "Person", "name": "Janus-MD"},
+    "publisher": {"@type": "Organization", "name": "My Site"}
+  }
+  </script>
+
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <a href="/" class="site-logo">
+        <span class="logo-icon">J</span>
+        <span>My Site</span>
+      </a>
+      <nav class="site-nav">
+        <a href="/">Home</a>
+        <a href="/feed.xml" title="RSS Feed">Feed</a>
+        <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme">🌙</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="site-main">
+    
+<article>
+  <header class="article-header">
+    <h1>Project Roadmap</h1>
+    <div class="article-meta">
+      <span class="meta-item">📅 2026-03-14</span>
+      <span class="meta-item">✍️ Janus-MD</span>
+      <a class="meta-item" href="/meta/roadmap.md" title="View Markdown source">📄 .md</a>
+      
+      <div class="article-tags">
+        
+        <span class="tag">#roadmap</span>
+        
+        <span class="tag">#project</span>
+        
+      </div>
+      
+    </div>
+  </header>
+
+  <div class="prose">
+    <h1 id="project-roadmap">Project Roadmap</h1>
+<p>A demo of <strong>task status markers</strong> in a nested article path (<code>articles/meta/roadmap.md</code> → <code>/meta/roadmap</code>).</p>
+<h2 id="phase-1-foundation">Phase 1 — Foundation</h2>
+<ul>
+<li><span class="task-marker task-done" title="已完成">[x]</span> Set up Janus-MD template</li>
+<li><span class="task-marker task-done" title="已完成">[x]</span> Configure GitHub Actions CI/CD</li>
+<li><span class="task-marker task-done" title="已完成">[x]</span> Connect custom domain</li>
+</ul>
+<h2 id="phase-2-content">Phase 2 — Content</h2>
+<ul>
+<li><span class="task-marker task-wip" title="进行中">[-]</span> Write introductory series (3/5 done)</li>
+<li><span class="task-marker task-todo" title="未开始">[ ]</span> Create tutorials section</li>
+<li><span class="task-marker task-todo" title="未开始">[ ]</span> Add tag index pages</li>
+</ul>
+<h2 id="phase-3-enhancement">Phase 3 — Enhancement</h2>
+<ul>
+<li><span class="task-marker task-todo" title="未开始">[ ]</span> Full-text search (Fuse.js)</li>
+<li><span class="task-marker task-blocked" title="阻塞中">[!]</span> Image optimization pipeline — blocked by CDN decision</li>
+<li><span class="task-marker task-deferred" title="延后/放弃">[~]</span> Comments system — decided against to keep it static</li>
+</ul>
+  </div>
+</article>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>
+      Powered by <a href="https://github.com/nextclaw/janus-md" target="_blank" rel="noopener">Janus-MD</a>
+      &middot; HTML for humans, Markdown for AI
+    </p>
+  </footer>
+
+  <script src="/assets/js/main.js"></script>
+  
+<script type="module">
+(async () => {
+  const root = document.querySelector('.prose');
+  if (!root) return;
+  const rawText = root.innerText;
+  const hasMath  = rawText.includes('$');
+  const hasEmoji = /:[A-Za-z0-9_+-]+:/.test(rawText);
+  if (!hasMath && !hasEmoji) return;
+
+  async function renderEmojis() {
+    try {
+      const mod = await import('/assets/vendor/emoji/index.js');
+      const [emojiMap, aliases] = await Promise.all([
+        mod.loadDefaultEmojiMap(),
+        mod.loadDefaultAliasesData().then(d => mod.normalizeAliases(d))
+      ]);
+      mod.applyEmojiShortcodes(root, { emojiMap, aliases });
+    } catch (e) { console.warn('[janus] emoji:', e); }
+  }
+
+  if (hasMath) {
+    // Inject MathJax config before loading the engine script
+    window.MathJax = {
+      tex: { inlineMath: [['$','$'], ['\\(','\\)']] },
+      startup: {
+        pageReady: () => MathJax.startup.defaultPageReady().then(() => {
+          document.dispatchEvent(new Event('mathjax:ready'));
+        })
+      }
+    };
+    const s = document.createElement('script');
+    s.src = '/assets/vendor/mathjax/tex-mml-chtml.js';
+    s.async = true;
+    document.head.appendChild(s);
+    if (hasEmoji) document.addEventListener('mathjax:ready', renderEmojis, { once: true });
+  } else {
+    renderEmojis();
+  }
+})();
+</script>
+
+</body>
+</html>
