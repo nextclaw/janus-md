@@ -30,19 +30,6 @@
     "publisher": {"@type": "Organization", "name": "{{ site_name }}"}
   }
   </script>
-
-  <!-- MathJax Configuration -->
-  <script>
-  /* MathJax config must be defined BEFORE the engine script loads */
-  window.MathJax = {
-    tex: { inlineMath: [['$','$'], ['\\(','\\)']] },
-    startup: {
-      pageReady: () => MathJax.startup.defaultPageReady().then(() => {
-        document.dispatchEvent(new Event('mathjax:ready'));
-      })
-    }
-  };
-  </script>
 {% endblock %}
 
 {% block content %}
@@ -72,14 +59,13 @@
 {% block scripts %}
 <script type="module">
 (async () => {
-  const root = document.querySelector('.prose'); // Use .prose for article body
+  const root = document.querySelector('.prose');
   if (!root) return;
   const rawText = root.innerText;
-  const hasMath  = rawText.includes('$$') || rawText.includes('\\(') || rawText.includes('\\[');
+  const hasMath  = rawText.includes('$');
   const hasEmoji = /:[A-Za-z0-9_+-]+:/.test(rawText);
   if (!hasMath && !hasEmoji) return;
 
-  // -- Emoji loader (leverages markdown-emoji built-in async helpers) --
   async function renderEmojis() {
     try {
       const mod = await import('/assets/vendor/emoji/index.js');
@@ -91,11 +77,19 @@
     } catch (e) { console.warn('[janus] emoji:', e); }
   }
 
-  // -- Orchestration: MathJax first -> Emoji second --
   if (hasMath) {
-    const src = '/assets/vendor/mathjax/tex-mml-chtml.js';
+    // Inject MathJax config before loading the engine script
+    window.MathJax = {
+      tex: { inlineMath: [['$','$'], ['\\(','\\)']] },
+      startup: {
+        pageReady: () => MathJax.startup.defaultPageReady().then(() => {
+          document.dispatchEvent(new Event('mathjax:ready'));
+        })
+      }
+    };
     const s = document.createElement('script');
-    s.src = src; s.async = true;
+    s.src = '/assets/vendor/mathjax/tex-mml-chtml.js';
+    s.async = true;
     document.head.appendChild(s);
     if (hasEmoji) document.addEventListener('mathjax:ready', renderEmojis, { once: true });
   } else {

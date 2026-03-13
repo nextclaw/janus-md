@@ -2,6 +2,7 @@
 title: MathJax and Emoji Test
 description: Testing the progressive enhancement of MathJax and Emojis
 date: "2026-03-14"
+draft: true
 author: TestUser
 tags:
   - math
