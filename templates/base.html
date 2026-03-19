@@ -19,9 +19,10 @@
   <!-- Atom feed auto-discovery -->
   <link rel="alternate" type="application/atom+xml" title="{{ site_name }} Feed" href="/feed.xml" />
 
-  <!-- Styles -->
   <link rel="stylesheet" href="/assets/css/style.css" />
   <link rel="stylesheet" href="/assets/css/codehilite.css" />
+  {% if theme_css_exists %}<link rel="stylesheet" href="/assets/css/theme.css" />{% endif %}
+  {% if custom_css_exists %}<link rel="stylesheet" href="/assets/css/custom.css" />{% endif %}
 
   {% block head_extra %}{% endblock %}
 </head>
@@ -34,6 +35,7 @@
       </a>
       <nav class="site-nav">
         <a href="/">Home</a>
+        <a href="/explorer/" title="Browse by directory">Explorer</a>
         <a href="/feed.xml" title="RSS Feed">Feed</a>
         <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme">🌙</button>
       </nav>

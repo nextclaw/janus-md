@@ -14,6 +14,12 @@ dist_dir      = "dist"
 [feed]
 max_entries = 20              # Atom feed 最多收录条目数
 
+[theme]
+# 自定义主题变量文件 — 仅覆盖 CSS Custom Properties（颜色、字体、间距）
+theme_css = "static/css/theme.css"
+# 自定义追加样式文件 — 任意 CSS，最高优先级
+custom_css = "static/css/custom.css"
+
 [markdown]
 # python-markdown 扩展列表
 extensions = [

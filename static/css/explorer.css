@@ -1,0 +1,284 @@
+/* ── Explorer Split-Pane View ─────────────────────────────────────────────── */
+
+/* Override site-main constraints for full-width split layout */
+.site-main:has(.explorer-split) {
+  max-width: 100%;
+  padding: 0;
+}
+
+/* ── Split Layout ── */
+.explorer-split {
+  display: flex;
+  height: calc(100vh - 57px);
+  overflow: hidden;
+}
+
+/* ── Sidebar (Left Pane) ── */
+.explorer-sidebar {
+  width: 360px;
+  min-width: 280px;
+  max-width: 480px;
+  border-right: 1px solid var(--c-border);
+  background: var(--c-bg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.sidebar-header {
+  padding: var(--sp-md) var(--sp-lg);
+  border-bottom: 1px solid var(--c-border);
+  flex-shrink: 0;
+}
+
+.sidebar-header h2 {
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+  margin: 0;
+}
+
+.explorer-icon {
+  font-size: 1em;
+}
+
+.explorer-tree {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--sp-sm);
+}
+
+/* Slim scrollbar for sidebar */
+.explorer-tree::-webkit-scrollbar {
+  width: 5px;
+}
+.explorer-tree::-webkit-scrollbar-track {
+  background: transparent;
+}
+.explorer-tree::-webkit-scrollbar-thumb {
+  background: var(--c-border);
+  border-radius: var(--r-full);
+}
+
+/* ── Content (Right Pane) ── */
+.explorer-content {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding: var(--sp-xl) var(--sp-2xl);
+  background: var(--c-bg);
+}
+
+/* Slim scrollbar for content */
+.explorer-content::-webkit-scrollbar {
+  width: 6px;
+}
+.explorer-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+.explorer-content::-webkit-scrollbar-thumb {
+  background: var(--c-border);
+  border-radius: var(--r-full);
+}
+
+/* ── Welcome Placeholder ── */
+.explorer-welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--c-text-muted);
+  gap: var(--sp-md);
+}
+
+.explorer-welcome .welcome-icon {
+  font-size: 3rem;
+  opacity: 0.5;
+}
+
+.explorer-welcome p {
+  font-size: var(--fs-sm);
+}
+
+/* ── Loading State ── */
+.explorer-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: 2rem;
+}
+
+/* ── Error State ── */
+.explorer-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--c-text-muted);
+  font-size: var(--fs-sm);
+}
+
+/* ── Active file highlight ── */
+.explorer-file.active {
+  background: var(--c-accent-subtle);
+  color: var(--c-accent);
+  font-weight: 600;
+}
+
+/* ── Tree Structure ── */
+.explorer-tree ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.explorer-tree ul ul {
+  padding-left: 1.25rem;
+  border-left: 1px solid var(--c-border-light);
+  margin-left: 0.6rem;
+}
+
+.explorer-tree li {
+  position: relative;
+}
+
+/* ── Folder Node ── */
+.explorer-folder {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+  padding: var(--sp-xs) var(--sp-sm);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: var(--fs-sm);
+  color: var(--c-text);
+  user-select: none;
+  transition: background var(--tr-fast), color var(--tr-fast);
+}
+
+.explorer-folder:hover {
+  background: var(--c-accent-subtle);
+  color: var(--c-accent);
+}
+
+.explorer-folder::before {
+  content: '▶';
+  display: inline-block;
+  font-size: 0.65em;
+  transition: transform var(--tr-fast);
+  color: var(--c-text-muted);
+  width: 0.8em;
+  flex-shrink: 0;
+}
+
+.explorer-folder[aria-expanded="true"]::before {
+  transform: rotate(90deg);
+}
+
+.explorer-folder .folder-icon {
+  font-size: 1em;
+  flex-shrink: 0;
+}
+
+.explorer-folder .folder-name {
+  flex: 1;
+}
+
+.explorer-folder .folder-count {
+  font-size: var(--fs-xs);
+  font-weight: 400;
+  color: var(--c-text-muted);
+  background: var(--c-bg-code);
+  padding: 1px 6px;
+  border-radius: var(--r-full);
+}
+
+/* ── Children Container ── */
+.explorer-children {
+  overflow: hidden;
+  transition: max-height 0.25s ease, opacity 0.2s ease;
+  max-height: 0;
+  opacity: 0;
+}
+
+.explorer-children.open {
+  max-height: 9999px;
+  opacity: 1;
+}
+
+/* ── File (Article) Node ── */
+.explorer-file {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+  padding: var(--sp-xs) var(--sp-sm);
+  padding-left: calc(var(--sp-sm) + 0.8em + var(--sp-sm));
+  border-radius: var(--r-sm);
+  text-decoration: none;
+  color: var(--c-text);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+  transition: background var(--tr-fast), color var(--tr-fast);
+}
+
+.explorer-file:hover {
+  background: var(--c-accent-subtle);
+  color: var(--c-accent);
+}
+
+.explorer-file .file-icon {
+  font-size: 1em;
+  flex-shrink: 0;
+}
+
+.explorer-file .file-title {
+  flex: 1;
+  font-weight: 500;
+}
+
+.explorer-file .file-date {
+  font-size: var(--fs-xs);
+  color: var(--c-text-muted);
+  white-space: nowrap;
+}
+
+/* ── Empty State ── */
+.explorer-empty {
+  text-align: center;
+  padding: var(--sp-3xl) var(--sp-lg);
+  color: var(--c-text-muted);
+  font-size: var(--fs-sm);
+}
+
+/* ── Responsive: stack on small screens ── */
+@media (max-width: 768px) {
+  .explorer-split {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .explorer-sidebar {
+    width: 100%;
+    max-width: 100%;
+    max-height: 40vh;
+    border-right: none;
+    border-bottom: 1px solid var(--c-border);
+  }
+
+  .explorer-content {
+    min-height: 60vh;
+    padding: var(--sp-lg) var(--sp-md);
+  }
+
+  .explorer-file .file-date {
+    display: none;
+  }
+}

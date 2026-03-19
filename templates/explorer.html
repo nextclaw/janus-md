@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Explorer - {{ site_name }}{% endblock %}
+{% block description %}Browse articles by directory structure{% endblock %}
+{% block og_title %}Explorer - {{ site_name }}{% endblock %}
+{% block og_description %}Browse articles by directory structure{% endblock %}
+
+{% block head_extra %}
+  <link rel="stylesheet" href="/assets/css/explorer.css" />
+{% endblock %}
+
+{% block content %}
+<div class="explorer-split">
+  <aside class="explorer-sidebar">
+    <div class="sidebar-header">
+      <h2><span class="explorer-icon">📂</span> Explorer</h2>
+    </div>
+    <div id="explorer-root" class="explorer-tree"></div>
+  </aside>
+  <div class="explorer-content" id="explorer-content">
+    <div id="explorer-welcome" class="explorer-welcome">
+      <span class="welcome-icon">👈</span>
+      <p>Select an article from the sidebar to read.</p>
+    </div>
+  </div>
+</div>
+
+<script>window.__JANUS_TREE__ = {{ tree_json | safe }};</script>
+<script src="/assets/js/explorer.js"></script>
+{% endblock %}

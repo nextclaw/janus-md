@@ -17,6 +17,7 @@ Custom Markdown features:
   - Recursive article discovery (articles/2026/03/post.md → slug: 2026/03/post)
 """
 
+import json
 import os
 import re
 import shutil
@@ -52,6 +53,11 @@ STATIC_DIR       = BASE_DIR / _cfg["build"]["static_dir"]
 DIST_DIR         = BASE_DIR / _cfg["build"]["dist_dir"]
 FEED_MAX         = _cfg["feed"].get("max_entries", 20)
 MD_EXTENSIONS    = _cfg["markdown"]["extensions"]
+
+# Theme / style plugin
+_theme_cfg       = _cfg.get("theme", {})
+THEME_CSS_PATH   = _theme_cfg.get("theme_css", "")
+CUSTOM_CSS_PATH  = _theme_cfg.get("custom_css", "")
 
 
 # ── Custom Markdown Extension: Task Status Markers ───────────────────────────
@@ -293,6 +299,44 @@ Sitemap: {SITE_URL}/sitemap.xml
 """
 
 
+# ── Explorer tree builder ─────────────────────────────────────────────────────
+
+def build_explorer_tree(articles: list[dict]) -> dict:
+    """Aggregate articles into a nested directory tree for the explorer view.
+
+    Returns a dict like:
+    {
+      "name": "root",
+      "children": [
+        {"name": "welcome", "slug": "welcome", "title": "...", "date": "..."},
+        {"name": "meta", "children": [ ... ]}
+      ]
+    }
+    """
+    root: dict = {"name": "root", "children": []}
+
+    for a in articles:
+        parts = a["slug"].split("/")
+        node = root
+        # Walk / create intermediate folder nodes
+        for folder_name in parts[:-1]:
+            child = next((c for c in node["children"] if c.get("name") == folder_name and "children" in c), None)
+            if child is None:
+                child = {"name": folder_name, "children": []}
+                node["children"].append(child)
+            node = child
+        # Append leaf (article) node
+        leaf_name = parts[-1]
+        node["children"].append({
+            "name": leaf_name,
+            "slug": a["slug"],
+            "title": a["meta"].get("title", leaf_name),
+            "date": a["meta"].get("date", ""),
+        })
+
+    return root
+
+
 # ── Main build ────────────────────────────────────────────────────────────────
 
 def build():
@@ -316,12 +360,16 @@ def build():
         autoescape=True,
     )
     # Expose site-wide variables to all templates
+    theme_css_exists = bool(THEME_CSS_PATH) and (BASE_DIR / THEME_CSS_PATH).is_file()
+    custom_css_exists = bool(CUSTOM_CSS_PATH) and (BASE_DIR / CUSTOM_CSS_PATH).is_file()
     env.globals.update(
         site_name=SITE_NAME,
         site_description=SITE_DESCRIPTION,
         site_url=SITE_URL,
         site_language=SITE_LANGUAGE,
         site_author=SITE_AUTHOR,
+        theme_css_exists=theme_css_exists,
+        custom_css_exists=custom_css_exists,
     )
 
     # ── Per-article outputs ───────────────────────────────────────────────────
@@ -350,6 +398,17 @@ def build():
         index_tmpl.render(articles=articles), encoding="utf-8"
     )
     print("   ✅ index.html")
+
+    # ── Explorer page ─────────────────────────────────────────────────────────
+    tree = build_explorer_tree(articles)
+    tree_json = json.dumps(tree, ensure_ascii=False)
+    explorer_dir = DIST_DIR / "explorer"
+    explorer_dir.mkdir(parents=True, exist_ok=True)
+    explorer_tmpl = env.get_template("explorer.html")
+    (explorer_dir / "index.html").write_text(
+        explorer_tmpl.render(tree_json=tree_json), encoding="utf-8"
+    )
+    print("   ✅ explorer/index.html")
 
     (DIST_DIR / "sitemap.xml").write_text(generate_sitemap(articles), encoding="utf-8")
     print("   ✅ sitemap.xml")
