@@ -20,9 +20,6 @@ jobs:
         with:
           version: "latest"
 
-      - name: Fetch Vendor Assets
-        run: bash scripts/fetch_vendor.sh
-
       - name: Build site
         run: uv run build.py
         env:
