@@ -2,7 +2,7 @@
 url         = "https://example.com"   # ← 改为你的域名（无末尾斜杠）
 name        = "My Site"
 description = "A dual-state static site powered by Janus-MD"
-language    = "zh-CN"
+language    = "en"
 author      = "Your Name"
 
 [build]
@@ -10,6 +10,7 @@ articles_dir  = "articles"    # 支持子目录，递归扫描 .md 文件
 templates_dir = "templates"
 static_dir    = "static"
 dist_dir      = "dist"
+verification_dir = "verification"  # 根级验证文件目录，会复制到 dist/ 根目录
 
 [feed]
 max_entries = 20              # Atom feed 最多收录条目数
@@ -29,3 +30,12 @@ extensions = [
   "sane_lists",   # 更符合直觉的列表行为
   "smarty",       # 智能引号、破折号
 ]
+
+[explorer]
+enabled = true
+expose_in_nav = true
+
+[task_markers]
+# "text"  = 原始 [ ], [-], [x], [!], [~] 彩色 CSS 徽章（默认）
+# "emoji" = 🔲 🔄 ✅ 🚫 ⏸️ Unicode emoji 替换
+style = "text"

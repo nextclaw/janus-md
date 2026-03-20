@@ -1,185 +1,188 @@
 # Janus-MD · Architecture & Design
 
-Reference document covering key design decisions and the overall architecture.
+Reference document for the template's build model, URL semantics, and gateway behavior.
 
----
+## Core model
 
-## Core Problem
+Janus-MD is a dual-state static site template:
 
-The modern web has two distinct content consumers:
+- humans get rendered HTML
+- AI agents can get the original Markdown
 
-| Consumer | Expected format | Examples |
-|----------|----------------|---------|
-| Humans   | Styled HTML    | Browsers |
-| AI / Machines | Structured plain text | LLM agents, RAG pipelines, MCP tools |
+Both outputs are generated at build time from the same source file.
 
-Traditional SSGs (Hugo, Jekyll, Hexo) serve only the first. Janus-MD generates **both forms at build time** and routes by consumer identity at the gateway — with zero content duplication.
+## Output contract
 
----
+For an article at `articles/tutorials/getting-started.md`:
 
-## Name
+- human HTML: `/tutorials/getting-started/`
+- AI Markdown: `/tutorials/getting-started.md`
+- build output:
+  - `dist/tutorials/getting-started/index.html`
+  - `dist/tutorials/getting-started.md`
 
+The default canonical style is trailing slash for HTML, because the generated site is directory-based and relative asset handling is more stable with `/slug/`.
+
+## Build pipeline
+
+Input:
+
+- `articles/**/*.md`
+- Jinja templates
+- static assets
+- optional files from `verification/`
+
+Output:
+
+- article HTML
+- article Markdown copies
+- homepage
+- optional explorer
+- `feed.xml`
+- `sitemap.xml`
+- `llms.txt`
+- `robots.txt`
+
+Production servers do not run Python. They only serve static files produced by `build.py`.
+
+## Metadata normalization
+
+The builder normalizes frontmatter before rendering:
+
+- `date` and `updated` become stable `YYYY-MM-DD` strings
+- `author` can be a string or list
+- `tags` are normalized into a list
+- `faq` is normalized into a safe list of `{q, a}` pairs
+
+This normalized metadata is then used for:
+
+- article templates
+- Atom feed
+- sitemap
+- `llms.txt`
+- JSON-LD structured data
+
+## Structured data model
+
+JSON-LD is built in Python and serialized with `json.dumps`, then injected into templates as a ready-made string.
+
+This avoids fragile template interpolation when titles, descriptions, or FAQ answers contain:
+
+- quotes
+- newlines
+- punctuation that would otherwise break inline JSON
+
+The template emits:
+
+- article pages: `Article` + `BreadcrumbList`, optionally `FAQPage`
+- homepage: `WebSite` + `Organization` + `ItemList`
+
+## Markdown rendering model
+
+Janus-MD intentionally avoids a vendor bootstrap step.
+
+### Emoji
+
+Emoji shortcodes such as `:rocket:` are converted at build time via `pymdownx.emoji`.
+
+### Math
+
+Math is preserved as MathJax-compatible markup via `pymdownx.arithmatex`.
+
+At runtime:
+
+- `static/js/main.js` loads MathJax on demand only when `.arithmatex` content exists
+- article pages and explorer previews both reuse the same shared renderer
+
+This keeps the default path light while still supporting formulas.
+
+## Explorer behavior
+
+Explorer is configurable:
+
+```toml
+[explorer]
+enabled = true
+expose_in_nav = true
 ```
-Janus-MD
-├── Janus  → Roman god of duality (two faces)
-└── MD     → Markdown, the source format
-```
 
----
+Rules:
 
-## Architecture Overview
+- if `enabled = true`, build `/explorer/`
+- if `expose_in_nav = false`, the page is generated but hidden from top nav
+- explorer is always excluded from sitemap, feed, and `llms.txt`
+- explorer always emits:
+  - `noindex`
+  - `nofollow`
+  - `noarchive`
 
-```
-┌─────────────────────────────────────────────┐
-│               Authoring layer               │
-│  articles/**/*.md  (YAML frontmatter)       │
-└────────────────────┬────────────────────────┘
-                     │ uv run build.py
-          ┌──────────▼──────────┐
-          │      dist/ output   │
-          │  <slug>/index.html  │  ← HTML for humans
-          │  <slug>.md          │  ← Markdown for AI
-          │  index.html         │
-          │  feed.xml           │  ← Atom RSS
-          │  sitemap.xml        │
-          │  llms.txt           │  ← AI discovery
-          │  robots.txt         │
-          └──────────┬──────────┘
-                     │ git push → sites branch
-          ┌──────────▼──────────┐
-          │    Gateway layer    │
-          │  Nginx (VPS)        │
-          │  Cloudflare Worker  │
-          └──────────┬──────────┘
-                     │
-         ┌───────────┴───────────┐
-   [Browser / crawler]   [AI bot / Accept: text/markdown]
-    ↓ <slug>/index.html         ↓ <slug>.md
-```
+The explorer is intended as an internal browsing utility, not a discovery surface.
 
----
+## Discovery layer
 
-## Key Design Decisions
+Janus-MD emits four discovery files:
 
-### 1. Single-file Python build engine
+- `sitemap.xml` for search engines
+- `feed.xml` for RSS / Atom readers
+- `llms.txt` for AI-aware discovery
+- `robots.txt` for crawler hints
 
-**Rationale**: production nodes must not run Python. The output is pure static files pulled via Git. Having a single `build.py` avoids framework lock-in, keeps dependencies minimal (`markdown`, `pyyaml`, `jinja2`, `pygments`), and runs cleanly under `uv run`.
+Semantics:
 
-### 2. Dual-signal content negotiation
+- all human-facing article URLs use `/slug/`
+- all machine-facing article URLs use `/slug.md`
+- Atom entry HTML links and IDs use `/slug/`
+- `llms.txt` points to `.md` URLs
 
-Both User-Agent and Accept header are checked independently; either alone is sufficient to trigger Markdown delivery:
+## Gateway semantics
 
-```
-is_ai_bot(UA)?           → serve .md
-Accept: text/markdown?   → serve .md
-neither                  → serve index.html
-```
+Routing happens at the gateway, not in the static files.
 
-This means custom tools (MCP, scripts) can request Markdown via `Accept: text/markdown` **without being listed in the UA blocklist**.
+### Human requests
 
-### 3. Nginx `map` pattern (no `if` nesting)
+- `/slug` -> `301` -> `/slug/`
+- `/slug/` -> HTML
 
-Nginx's `if` inside `location` is [documented as dangerous](https://www.nginx.com/resources/wiki/start/topics/depth/ifisevil/). Janus-MD uses `map` in the `http` block to pre-compute a single `$serve_markdown` variable, then a single `try_files` in `location /` consults it:
+### AI / Markdown requests
+
+Either signal is enough:
+
+- recognized AI crawler `User-Agent`
+- `Accept: text/markdown`
+
+Behavior:
+
+- `/slug` -> Markdown `200`
+- `/slug/` -> Markdown `200`
+- `/slug.md` -> Markdown `200`
+
+Missing paths must return real `404`, not a homepage fallback.
+
+## Nginx pattern
+
+The shipped Nginx example uses:
+
+- `map` to precompute AI / markdown intent
+- `@markdown` and `@html` named locations
+- canonical redirect only for normal HTML requests
+
+The slash redirect is explicit:
 
 ```nginx
-map "$is_ai_bot:$wants_markdown" $serve_markdown { "1:0" "1"; "0:1" "1"; ... }
-location / {
-    set $target "$uri/index.html";
-    if ($serve_markdown = "1") { set $target "$uri.md"; }
-    try_files $target $uri $uri/ =404;
-}
+return 301 https://$host$canonical_redirect;
 ```
 
-### 4. AI discovery trifecta
+This avoids accidental `Location: http://...` responses when TLS is terminated upstream.
 
-| File | Standard | Purpose |
-|------|---------|---------|
-| `sitemap.xml` | sitemaps.org | Traditional search engine crawlers |
-| `llms.txt` | llmstxt.org | LLM agents find content index |
-| `robots.txt` | RFC | Declares `Sitemap:` and `Llms-Txt:` locations |
+## Cloudflare guidance
 
-`llms.txt` entries point to `.md` URLs (not HTML), so agents retrieve structured content directly.
+If the Cloudflare Worker owns routing:
 
-### 5. Task status markers — custom Markdown extension
+- keep slash canonicalization in the Worker
+- do not duplicate it with Redirect Rules
 
-A `Treeprocessor` subclass (`TaskStatusExtension`) post-processes the HTML element tree after standard Markdown parsing. It uses BFS traversal over a **snapshot** of the pre-insertion tree to avoid infinite loops from newly-inserted `<span>` nodes:
+If Nginx owns routing:
 
-```python
-queue = [root]
-elements = []
-while queue:
-    el = queue.pop(0)
-    elements.append(el)
-    queue.extend(list(el))        # snapshot before any mutation
+- disable overlapping Cloudflare Redirect Rules
 
-for el in elements:               # process only original nodes
-    self._process_element(el)
-```
-
-Markers in `.md` output are preserved verbatim; only HTML receives the styled `<span>` badges.
-
-### 6. Recursive article discovery
-
-`ARTICLES_DIR.rglob("*.md")` scans all depths. The slug is derived from the relative path:
-
-```
-articles/2026/03/my-post.md  →  slug = "2026/03/my-post"
-```
-
-Output paths are created with `mkdir -p`, so deeply nested slugs work transparently.
-
-### 7. CI/CD dual-branch model
-
-```
-main branch    ← source code only (articles, templates, build.py)
-sites branch   ← built dist/ output only (force_orphan=true, no history)
-```
-
-Production servers pull from `sites` via bare Git — no Python, no build tooling on the server.
-
----
-
-## Dependency Comparison
-
-| Framework | Language | Learning curve | Native dual-state | Hackable |
-|-----------|---------|---------------|------------------|---------|
-| Hugo | Go | Medium | ❌ | Low |
-| Jekyll | Ruby | Low | ❌ | Medium |
-| Gatsby | Node/React | High | ❌ | High |
-| **Janus-MD** | **Python** | **Minimal** | **✅** | **Full** |
-
----
-
-## Extension Roadmap
-
-### Phase 1 (shipped)
-- [x] Dual-state HTML + Markdown SSG
-- [x] Task status markers (5 states)
-- [x] Multi-level article directories
-- [x] Atom feed + llms.txt + sitemap + robots.txt
-- [x] Light / dark theme
-- [x] GitHub Actions CI/CD
-- [x] Nginx + Cloudflare Worker gateway configs
-
-### Phase 2 (planned)
-- [ ] Tag index pages (`/tags/<tag>/index.html`)
-- [ ] Client-side search (Fuse.js + build-time JSON index)
-- [ ] `pages/` directory for standalone non-article content
-- [ ] Image optimisation (WebP conversion + `srcset`)
-
-### Phase 3 (future)
-- [ ] Obsidian vault symlink documentation
-- [ ] MCP server exposing site content as tools
-- [ ] i18n (multi-language article directories)
-
----
-
-## References
-
-- [llmstxt.org](https://llmstxt.org/) — `llms.txt` standard
-- [sitemaps.org](https://www.sitemaps.org/) — Sitemap protocol
-- [RFC 4287](https://datatracker.ietf.org/doc/html/rfc4287) — Atom feed
-- [Nginx `if` is Evil](https://www.nginx.com/resources/wiki/start/topics/depth/ifisevil/)
-- [astral-sh/uv](https://docs.astral.sh/uv/)
-- [Cloudflare Workers](https://developers.cloudflare.com/workers/)
-- [peaceiris/actions-gh-pages](https://github.com/peaceiris/actions-gh-pages)
+Duplicate canonical redirects at the edge are a common cause of AI requests being redirected to HTML canonical URLs before Markdown negotiation can happen.

@@ -36,10 +36,40 @@ Place articles in subdirectories for organized content:
 articles/
   2026/
     03/
-      my-post.md        → /2026/03/my-post
+      my-post.md        → /2026/03/my-post/
   tutorials/
-    getting-started.md  → /tutorials/getting-started
+    getting-started.md  → /tutorials/getting-started/
 ```
+
+## Emoji Support :rocket:
+
+Janus-MD converts emoji shortcodes at build time — no JavaScript required:
+
+- :white_check_mark: Build-time conversion — zero runtime cost
+- :books: Extensive library — standard GitHub/Slack shortcodes
+- :sparkles: Works everywhere — pure Unicode output
+
+Examples: :heart: :fire: :tada: :warning: :bulb: :zap:
+
+Full shortcode reference: [emoji-cheat-sheet](https://github.com/ikatyang/emoji-cheat-sheet)
+
+## Math Rendering
+
+Janus-MD supports LaTeX math via MathJax, loaded on-demand only when formulas are present.
+
+Inline math: The energy-mass equivalence $E = mc^2$ is fundamental to physics.
+
+Display math:
+
+$$
+\int_{-\infty}^{\infty} e^{-x^2} \, dx = \sqrt{\pi}
+$$
+
+The quadratic formula:
+
+$$
+x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}
+$$
 
 ## Code Highlighting
 

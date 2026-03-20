@@ -1,12 +1,16 @@
 # Janus-MD · Deployment Guide
 
-Three deployment options, ordered by complexity.
+Three deployment options, ordered by operational complexity.
 
----
+## Option A — GitHub Actions + Cloudflare Pages + Worker
 
-## Option A — GitHub Pages + Cloudflare Worker (Recommended for beginners)
+Architecture:
 
-**Architecture**: GitHub Actions builds → pushes to `sites` branch → Cloudflare Pages serves + Worker handles content negotiation.
+- `main` branch stores source
+- GitHub Actions builds `dist/`
+- built output is published to the `sites` branch
+- Cloudflare Pages serves `sites`
+- Cloudflare Worker handles slash canonicalization and AI/Markdown negotiation
 
 ### 1. Push source to GitHub
 
@@ -15,176 +19,182 @@ git remote add origin https://github.com/<you>/my-site.git
 git push -u origin main
 ```
 
-### 2. Set the `SITE_URL` variable
+### 2. Set `SITE_URL`
 
-GitHub repo → **Settings → Variables → Actions → New repository variable**:
+GitHub repo -> `Settings` -> `Variables` -> `Actions`:
 
 | Name | Value |
 |------|-------|
 | `SITE_URL` | `https://your-site.pages.dev` or your custom domain |
 
-### 3. CI/CD workflow (built-in)
+### 3. CI/CD workflow
 
-`.github/workflows/build-and-publish.yml` runs on every push to `main`:
+The built-in workflow builds on every push to `main` and publishes `dist/` to `sites`.
 
-```yaml
-on:
-  push:
-    branches: [main]
-  workflow_dispatch:
+Make sure GitHub Actions has **Read and write permissions** enabled.
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
-      - run: uv run build.py
-        env:
-          SITE_URL: ${{ vars.SITE_URL }}
-      - uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
-          publish_branch: sites
-          force_orphan: true
-```
+### 4. Connect Cloudflare Pages
 
-> **Permissions**: Enable *Read and write permissions* under **Settings → Actions → General → Workflow permissions**.
+1. Cloudflare Dashboard -> `Pages` -> `Create a project`
+2. Connect your Git repo
+3. Set **Production branch** to `sites`
+4. Leave build command empty
+5. Use `/` as the output directory
 
-### 4. Connect to Cloudflare Pages
+### 5. Deploy the Worker
 
-1. Cloudflare Dashboard → **Pages** → Create a project → Connect to Git
-2. Select your repo, set **Production branch** to `sites`
-3. **Build command**: *(leave empty — `sites` branch contains pre-built output)*
-4. **Build output directory**: `/`
+Use `deploy/cloudflare-worker.js`:
 
-### 5. Deploy the Cloudflare Worker
+- as `_worker.js` in the built output, or
+- as a standalone Worker / Pages Function
 
-Copy `deploy/cloudflare-worker.js` into your Cloudflare Pages project:
+Important behavior:
 
-- Place it as `_worker.js` at the root of your `dist/` output, **or**
-- Use the Cloudflare dashboard Workers editor to paste and deploy the script.
+- normal `/slug` requests redirect to `/slug/`
+- AI UA or `Accept: text/markdown` requests to `/slug` return Markdown directly
+- explicit `.md` requests always return Markdown with `X-Content-Source`, `X-Robots-Tag`, and `Vary`
 
-```bash
-# With Wrangler CLI
-npx wrangler pages deploy dist --project-name my-site
-```
+## Option B — VPS + Nginx
 
----
+Architecture:
 
-## Option B — VPS Self-Hosting (Nginx)
+- GitHub Actions builds `dist/` into `sites`
+- VPS pulls the `sites` branch
+- Nginx serves the static files directly
 
-**Architecture**: GitHub Actions → `sites` branch → VPS pulls via Git → Nginx serves `dist/` directly.
-
-### 1. Initialise the VPS
+### 1. Initialize the VPS
 
 ```bash
 apt-get install -y nginx git
 
-# Clone the sites branch
 git clone --branch sites --single-branch \
-    https://github.com/<you>/my-site.git \
-    /var/www/my-site
+  https://github.com/<you>/my-site.git \
+  /var/www/janus-site
 ```
 
-### 2. Configure Nginx
+### 2. Install the Nginx config
 
 ```bash
-cp /path/to/deploy/nginx.conf /etc/nginx/sites-available/my-site
-# Edit server_name and root path in the file
-ln -s /etc/nginx/sites-available/my-site /etc/nginx/sites-enabled/
-nginx -t && systemctl reload nginx
+cp /path/to/deploy/nginx.conf /etc/nginx/sites-available/janus-site
+ln -s /etc/nginx/sites-available/janus-site /etc/nginx/sites-enabled/janus-site
+nginx -t
+systemctl reload nginx
 ```
 
-Key content-negotiation design (full config in `deploy/nginx.conf`):
+Update at least:
 
-```nginx
-# http {} block — map variables (computed once per request, zero if-nesting)
-map $http_user_agent $is_ai_bot { ... }
-map $http_accept    $wants_markdown { ... }
-map "$is_ai_bot:$wants_markdown" $serve_markdown { ... }
+- `server_name`
+- `root`
 
-# server {} block
-location / {
-    set $target "$uri/index.html";
-    if ($serve_markdown = "1") { set $target "$uri.md"; }
-    try_files $target $uri $uri/ =404;
-}
-```
+The shipped config implements:
 
-### 3. Auto-pull on deploy
+- AI bot / `Accept: text/markdown` detection via `map`
+- canonical HTML URLs as `/slug/`
+- explicit `.md` handling with `text/markdown`
+- negotiated Markdown responses for AI requests
+- real `404` for missing paths
+- no homepage soft-404 fallback
 
-**Option 1 — cron** (poll every 5 minutes):
+### 3. Auto-pull the `sites` branch
 
-```bash
-# /opt/deploy/pull-sites.sh
-#!/bin/bash
-cd /var/www/my-site
-git fetch origin sites
-git reset --hard origin/sites
-echo "$(date): deployed" >> /var/log/janus-deploy.log
-```
+Use cron, a webhook receiver, or your deployment system of choice.
 
-```bash
-chmod +x /opt/deploy/pull-sites.sh
-echo "*/5 * * * * /opt/deploy/pull-sites.sh" | crontab -
-```
+### 4. TLS
 
-**Option 2 — GitHub webhook** (instant, recommended):  
-Use [adnanh/webhook](https://github.com/adnanh/webhook) or any lightweight HTTP listener.
-
-### 4. HTTPS with Let's Encrypt
+If Nginx terminates TLS directly:
 
 ```bash
 apt-get install -y certbot python3-certbot-nginx
 certbot --nginx -d your-domain.com
 ```
 
----
+If TLS is terminated at Cloudflare and origin stays on `80`, keep the shipped origin-style config and proxy through Cloudflare.
 
-## Option C — Cloudflare Pages Direct Deploy (no VPS)
+## Option C — Cloudflare Pages direct from CI
 
-Bypass the `sites` branch and deploy straight from CI:
+Instead of publishing to `sites`, CI can upload `dist/` directly to Cloudflare Pages.
 
-```yaml
-# Replace the peaceiris step with:
-- name: Deploy to Cloudflare Pages
-  uses: cloudflare/pages-action@v1
-  with:
-    apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-    accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-    projectName: my-site
-    directory: dist
-    gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-```
+Use `cloudflare/pages-action` in GitHub Actions and keep the same Worker semantics.
 
----
+## Gateway ownership rules
 
-## Production Checklist
+Choose one place to own slash canonicalization:
+
+- Nginx, or
+- the Cloudflare Worker
+
+Do not duplicate `/slug -> /slug/` redirects in both places.
+
+Also do not add a Cloudflare Redirect Rule for slash canonicalization unless it explicitly excludes:
+
+- AI crawler user agents
+- requests with `Accept: text/markdown`
+
+If edge redirects run unconditionally, they will break Markdown negotiation by redirecting AI requests before the origin logic runs.
+
+## Validation examples
+
+Assume:
 
 ```bash
-DOMAIN="https://your-site.example.com"
-
-curl -sI "$DOMAIN/"                                    # HTML homepage
-curl -sI "$DOMAIN/welcome"                             # HTML article
-curl -sI "$DOMAIN/welcome.md" | grep content-type      # text/markdown
-curl -sI -H "Accept: text/markdown" "$DOMAIN/welcome" \
-  | grep content-type                                  # text/markdown (needs gateway)
-curl -sI "$DOMAIN/feed.xml"  | grep content-type       # application/atom+xml
-curl -s  "$DOMAIN/llms.txt"  | head -5
-curl -s  "$DOMAIN/sitemap.xml" | head -5
+export BASE="https://your-site.example.com"
+export ARTICLE="welcome"
 ```
 
----
+Human HTML flow:
 
-## Common Issues
+```bash
+curl -sI "$BASE/$ARTICLE"
+curl -sI "$BASE/$ARTICLE/"
+```
 
-**Q: `sites` branch push fails with permission error?**  
-Go to **Settings → Actions → General → Workflow permissions** and enable *Read and write permissions*.
+Expected:
 
-**Q: Content negotiation not working on Nginx?**  
-The `map` directives must be inside the `http {}` block, not inside `server {}`. Check with `nginx -T`.
+- `/welcome` returns `301` to `/welcome/`
+- `/welcome/` returns `200 text/html`
 
-**Q: Cloudflare shows stale content?**  
-Dashboard → **Caching → Purge Everything**, or trigger a new Pages deployment.
+Markdown negotiation:
+
+```bash
+curl -sI -A "GPTBot/1.0" "$BASE/$ARTICLE"
+curl -sI -H "Accept: text/markdown" "$BASE/$ARTICLE"
+curl -sI "$BASE/$ARTICLE.md"
+```
+
+Expected:
+
+- all return `200`
+- `content-type: text/markdown; charset=utf-8`
+- `x-content-source: markdown`
+
+Discovery layer:
+
+```bash
+curl -sI "$BASE/robots.txt"
+curl -sI "$BASE/sitemap.xml"
+curl -sI "$BASE/feed.xml"
+curl -sI "$BASE/llms.txt"
+```
+
+For a fuller checklist, use [production-validation-sop.md](./production-validation-sop.md).
+
+## Common issues
+
+**Content negotiation does not work on Nginx**
+
+- `map` directives must be placed in the `http {}` block, not inside `server {}`
+- run `nginx -T` to confirm the live config
+
+**AI requests still get redirected to `/slug/`**
+
+- disable duplicate Cloudflare Redirect Rules
+- check whether the Worker or Nginx is the actual owner of canonical redirects
+
+**Missing paths return the homepage instead of `404`**
+
+- remove any `try_files ... /index.html` fallback unless you are intentionally serving an SPA
+
+**Cloudflare serves stale content**
+
+- purge cache or redeploy
+- if origin-only checks are correct but public behavior is wrong, inspect Cloudflare rules first

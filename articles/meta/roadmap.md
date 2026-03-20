@@ -9,7 +9,7 @@ draft: false
 
 # Project Roadmap
 
-A demo of **task status markers** in a nested article path (`articles/meta/roadmap.md` → `/meta/roadmap`).
+A demo of **task status markers** in a nested article path (`articles/meta/roadmap.md` → `/meta/roadmap/`).
 
 ## Phase 1 — Foundation
 

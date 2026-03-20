@@ -1,30 +1,39 @@
 {% extends "base.html" %}
 
-{% block title %}Explorer - {{ site_name }}{% endblock %}
-{% block description %}Browse articles by directory structure{% endblock %}
-{% block og_title %}Explorer - {{ site_name }}{% endblock %}
-{% block og_description %}Browse articles by directory structure{% endblock %}
+{% block title %}Explorer | {{ site_name }}{% endblock %}
+{% block description %}Internal article explorer for browsing the content tree.{% endblock %}
+{% block og_title %}Explorer | {{ site_name }}{% endblock %}
+{% block og_description %}Internal article explorer for browsing the content tree.{% endblock %}
+{% block twitter_title %}Explorer | {{ site_name }}{% endblock %}
+{% block twitter_description %}Internal article explorer for browsing the content tree.{% endblock %}
+{% block robots_content %}noindex, nofollow, noarchive{% endblock %}
 
 {% block head_extra %}
   <link rel="stylesheet" href="/assets/css/explorer.css" />
 {% endblock %}
 
 {% block content %}
-<div class="explorer-split">
+<section class="explorer-split" aria-label="Internal article explorer">
   <aside class="explorer-sidebar">
     <div class="sidebar-header">
-      <h2><span class="explorer-icon">📂</span> Explorer</h2>
+      <h1>Explorer</h1>
+      <p>Internal article browser</p>
     </div>
     <div id="explorer-root" class="explorer-tree"></div>
   </aside>
-  <div class="explorer-content" id="explorer-content">
-    <div id="explorer-welcome" class="explorer-welcome">
-      <span class="welcome-icon">👈</span>
-      <p>Select an article from the sidebar to read.</p>
-    </div>
-  </div>
-</div>
 
-<script>window.__JANUS_TREE__ = {{ tree_json | safe }};</script>
-<script src="/assets/js/explorer.js"></script>
+  <section class="explorer-content" id="explorer-content" aria-live="polite">
+    <div id="explorer-welcome" class="explorer-welcome">
+      <span class="welcome-icon">📂</span>
+      <p>Select an article to preview it here.</p>
+    </div>
+  </section>
+</section>
+<script>
+window.__JANUS_EXPLORER_TREE__ = {{ explorer_tree | tojson }};
+</script>
+{% endblock %}
+
+{% block scripts %}
+  <script src="/assets/js/explorer.js"></script>
 {% endblock %}

@@ -3,20 +3,32 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
   <title>{% block title %}{{ site_name }}{% endblock %}</title>
   <meta name="description" content="{% block description %}{{ site_description }}{% endblock %}" />
+  <meta name="robots" content="{% block robots_content %}index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1{% endblock %}" />
+  {% block author_meta %}{% endblock %}
+  {% block keywords_meta %}{% endblock %}
 
-  <!-- Open Graph -->
-  <meta property="og:type"        content="{% block og_type %}website{% endblock %}" />
-  <meta property="og:title"       content="{% block og_title %}{{ site_name }}{% endblock %}" />
+  {% if canonical_url %}<link rel="canonical" href="{{ canonical_url }}" />{% endif %}
+
+  <meta property="og:type" content="{% block og_type %}website{% endblock %}" />
+  <meta property="og:title" content="{% block og_title %}{{ site_name }}{% endblock %}" />
   <meta property="og:description" content="{% block og_description %}{{ site_description }}{% endblock %}" />
-  <meta property="og:site_name"   content="{{ site_name }}" />
+  <meta property="og:site_name" content="{{ site_name }}" />
+  {% if canonical_url %}<meta property="og:url" content="{{ canonical_url }}" />{% endif %}
   {% block og_extra %}{% endblock %}
 
-  <!-- Markdown alternate link (per-article) -->
+  <meta name="twitter:card" content="{% block twitter_card %}summary_large_image{% endblock %}" />
+  <meta name="twitter:title" content="{% block twitter_title %}{{ site_name }}{% endblock %}" />
+  <meta name="twitter:description" content="{% block twitter_description %}{{ site_description }}{% endblock %}" />
+  {% block twitter_extra %}{% endblock %}
+
   {% block alternate %}{% endblock %}
 
-  <!-- Atom feed auto-discovery -->
   <link rel="alternate" type="application/atom+xml" title="{{ site_name }} Feed" href="/feed.xml" />
 
   <link rel="stylesheet" href="/assets/css/style.css" />
@@ -29,14 +41,16 @@
 <body>
   <header class="site-header">
     <div class="container">
-      <a href="/" class="site-logo">
-        <span class="logo-icon">J</span>
+      <a href="/" class="site-logo" aria-label="{{ site_name }} home">
+        <span class="logo-icon">{{ site_logo_letter }}</span>
         <span>{{ site_name }}</span>
       </a>
-      <nav class="site-nav">
+      <nav class="site-nav" aria-label="Main navigation">
         <a href="/">Home</a>
-        <a href="/explorer/" title="Browse by directory">Explorer</a>
-        <a href="/feed.xml" title="RSS Feed">Feed</a>
+        {% if explorer_enabled and explorer_expose_in_nav %}
+        <a href="/explorer/" title="Browse the article tree">Explorer</a>
+        {% endif %}
+        <a href="/feed.xml" title="Atom feed">Feed</a>
         <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme">🌙</button>
       </nav>
     </div>

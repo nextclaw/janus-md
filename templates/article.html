@@ -1,16 +1,33 @@
 {% extends "base.html" %}
 
-{% block title %}{{ meta.title }} - {{ site_name }}{% endblock %}
+{% block title %}{{ meta.title }} | {{ site_name }}{% endblock %}
 {% block description %}{{ meta.description }}{% endblock %}
+
+{% block author_meta %}
+  {% if meta.author_display %}
+  <meta name="author" content="{{ meta.author_display }}" />
+  {% elif site_author %}
+  <meta name="author" content="{{ site_author }}" />
+  {% endif %}
+{% endblock %}
+{% block keywords_meta %}{% if meta.tags %}<meta name="keywords" content="{{ meta.tags | join(', ') }}" />{% endif %}{% endblock %}
 
 {% block og_type %}article{% endblock %}
 {% block og_title %}{{ meta.title }}{% endblock %}
 {% block og_description %}{{ meta.description }}{% endblock %}
+{% block twitter_title %}{{ meta.title }}{% endblock %}
+{% block twitter_description %}{{ meta.description }}{% endblock %}
+
 {% block og_extra %}
   <meta property="article:published_time" content="{{ meta.date }}" />
+  {% if meta.updated %}<meta property="article:modified_time" content="{{ meta.updated }}" />{% endif %}
+  {% if meta.author_display %}<meta property="article:author" content="{{ meta.author_display }}" />{% endif %}
   {% if meta.tags %}{% for tag in meta.tags %}<meta property="article:tag" content="{{ tag }}" />
   {% endfor %}{% endif %}
-  {% if meta.cover %}<meta property="og:image" content="{{ meta.cover }}" />{% endif %}
+  {% if meta.cover %}
+  <meta property="og:image" content="{{ meta.cover }}" />
+  <meta name="twitter:image" content="{{ meta.cover }}" />
+  {% endif %}
 {% endblock %}
 
 {% block alternate %}
@@ -18,27 +35,19 @@
 {% endblock %}
 
 {% block head_extra %}
-  <!-- JSON-LD Structured Data -->
   <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "Article",
-    "headline": "{{ meta.title }}",
-    "description": "{{ meta.description }}",
-    "datePublished": "{{ meta.date }}",
-    {% if meta.author %}"author": {"@type": "Person", "name": "{{ meta.author }}"},{% endif %}
-    "publisher": {"@type": "Organization", "name": "{{ site_name }}"}
-  }
+{{ structured_data_json | safe }}
   </script>
 {% endblock %}
 
 {% block content %}
-<article>
+<article itemscope itemtype="https://schema.org/Article">
   <header class="article-header">
-    <h1>{{ meta.title }}</h1>
+    <h1 itemprop="headline">{{ meta.title }}</h1>
     <div class="article-meta">
-      <span class="meta-item">📅 {{ meta.date }}</span>
-      {% if meta.author %}<span class="meta-item">✍️ {{ meta.author }}</span>{% endif %}
+      <span class="meta-item">📅 <time itemprop="datePublished" datetime="{{ meta.date }}">{{ meta.date }}</time></span>
+      {% if meta.updated %}<span class="meta-item">🔄 Updated: <time itemprop="dateModified" datetime="{{ meta.updated }}">{{ meta.updated }}</time></span>{% endif %}
+      {% if meta.author_display %}<span class="meta-item" itemprop="author">✍️ {{ meta.author_display }}</span>{% endif %}
       <a class="meta-item" href="/{{ slug }}.md" title="View Markdown source">📄 .md</a>
       {% if meta.tags %}
       <div class="article-tags">
@@ -50,51 +59,8 @@
     </div>
   </header>
 
-  <div class="prose">
+  <div class="prose" itemprop="articleBody">
     {{ content | safe }}
   </div>
 </article>
-{% endblock %}
-
-{% block scripts %}
-<script type="module">
-(async () => {
-  const root = document.querySelector('.prose');
-  if (!root) return;
-  const rawText = root.innerText;
-  const hasMath  = rawText.includes('$');
-  const hasEmoji = /:[A-Za-z0-9_+-]+:/.test(rawText);
-  if (!hasMath && !hasEmoji) return;
-
-  async function renderEmojis() {
-    try {
-      const mod = await import('/assets/vendor/emoji/index.js');
-      const [emojiMap, aliases] = await Promise.all([
-        mod.loadDefaultEmojiMap(),
-        mod.loadDefaultAliasesData().then(d => mod.normalizeAliases(d))
-      ]);
-      mod.applyEmojiShortcodes(root, { emojiMap, aliases });
-    } catch (e) { console.warn('[janus] emoji:', e); }
-  }
-
-  if (hasMath) {
-    // Inject MathJax config before loading the engine script
-    window.MathJax = {
-      tex: { inlineMath: [['$','$'], ['\\(','\\)']] },
-      startup: {
-        pageReady: () => MathJax.startup.defaultPageReady().then(() => {
-          document.dispatchEvent(new Event('mathjax:ready'));
-        })
-      }
-    };
-    const s = document.createElement('script');
-    s.src = '/assets/vendor/mathjax/tex-mml-chtml.js';
-    s.async = true;
-    document.head.appendChild(s);
-    if (hasEmoji) document.addEventListener('mathjax:ready', renderEmojis, { once: true });
-  } else {
-    renderEmojis();
-  }
-})();
-</script>
 {% endblock %}
