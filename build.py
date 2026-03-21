@@ -18,6 +18,7 @@ generates:
 
 import json
 import os
+import posixpath
 import re
 import shutil
 import tomllib
@@ -71,6 +72,10 @@ EXPLORER_EXPOSE_IN_NAV = EXPLORER_ENABLED and bool(
 
 _task_cfg = _cfg.get("task_markers", {})
 TASK_MARKER_STYLE = _task_cfg.get("style", "text")  # "text" | "emoji"
+
+_index_cfg = _cfg.get("index", {})
+INDEX_PAGINATE = bool(_index_cfg.get("paginate", False))
+INDEX_PER_PAGE = int(_index_cfg.get("per_page", 50))
 
 
 # ── Custom Markdown Extension: Task Status Markers ─────────────────────────
@@ -157,7 +162,16 @@ _WIKILINK_PATTERN = re.compile(r"\[\[([^\]|]+?)(?:\|([^\]]+?))?\]\]")
 
 
 class WikiLinkPreprocessor(Preprocessor):
-    """Convert Obsidian [[path|title]] links to standard Markdown links."""
+    """Convert Obsidian [[path|title]] links to standard Markdown links.
+
+    Paths are resolved relative to the current article's directory,
+    matching Obsidian's behaviour.  Set ``article_dir`` before each
+    ``md.convert()`` call.
+    """
+
+    def __init__(self, md):
+        super().__init__(md)
+        self.article_dir: str = ""  # e.g. "5g-technology" for slug "5g-technology/_toc"
 
     def run(self, lines: list[str]) -> list[str]:
         return [self._process_line(line) for line in lines]
@@ -165,13 +179,17 @@ class WikiLinkPreprocessor(Preprocessor):
     def _process_line(self, line: str) -> str:
         return _WIKILINK_PATTERN.sub(self._replace_match, line)
 
-    @staticmethod
-    def _replace_match(match: re.Match) -> str:
+    def _replace_match(self, match: re.Match) -> str:
         path = match.group(1).strip()
         title = (match.group(2) or path).strip()
         # Remove .md suffix if present
         if path.endswith(".md"):
             path = path[:-3]
+        # Resolve relative paths against current article directory
+        if not path.startswith("/"):
+            if self.article_dir:
+                path = posixpath.normpath(f"{self.article_dir}/{path}")
+            # else root-level article, path stays as-is
         # Build URL: ensure leading / and trailing /
         url = path if path.startswith("/") else f"/{path}"
         if not url.endswith("/"):
@@ -357,6 +375,10 @@ def load_articles() -> list[dict]:
 
         slug = slug_from_path(md_file)
         md.reset()
+        # Set article directory context for wiki link resolution
+        wikilink_prep = md.preprocessors["wikilinks"]
+        slug_dir = posixpath.dirname(slug)
+        wikilink_prep.article_dir = slug_dir
         html_content = md.convert(body)
 
         articles.append(
@@ -727,13 +749,53 @@ def build():
     print()
 
     index_template = env.get_template("index.html")
-    index_html = index_template.render(
-        articles=articles,
-        canonical_url=f"{SITE_URL}/",
-        structured_data_json=build_index_schema(articles),
-    )
-    (DIST_DIR / "index.html").write_text(index_html, encoding="utf-8")
-    print("   ✅ index.html")
+    if INDEX_PAGINATE and len(articles) > INDEX_PER_PAGE:
+        total_pages = (len(articles) + INDEX_PER_PAGE - 1) // INDEX_PER_PAGE
+        for page_num in range(1, total_pages + 1):
+            start = (page_num - 1) * INDEX_PER_PAGE
+            end = start + INDEX_PER_PAGE
+            page_articles = articles[start:end]
+
+            prev_url = None
+            next_url = None
+            if page_num > 1:
+                prev_url = "/" if page_num == 2 else f"/page/{page_num - 1}/"
+            if page_num < total_pages:
+                next_url = f"/page/{page_num + 1}/"
+
+            if page_num == 1:
+                canonical_url = f"{SITE_URL}/"
+                out_path = DIST_DIR / "index.html"
+            else:
+                canonical_url = f"{SITE_URL}/page/{page_num}/"
+                page_dir = DIST_DIR / "page" / str(page_num)
+                page_dir.mkdir(parents=True, exist_ok=True)
+                out_path = page_dir / "index.html"
+
+            index_html = index_template.render(
+                articles=page_articles,
+                canonical_url=canonical_url,
+                structured_data_json=build_index_schema(articles),
+                page_num=page_num,
+                total_pages=total_pages,
+                prev_url=prev_url,
+                next_url=next_url,
+            )
+            out_path.write_text(index_html, encoding="utf-8")
+            label = "index.html" if page_num == 1 else f"page/{page_num}/index.html"
+            print(f"   ✅ {label}")
+    else:
+        index_html = index_template.render(
+            articles=articles,
+            canonical_url=f"{SITE_URL}/",
+            structured_data_json=build_index_schema(articles),
+            page_num=1,
+            total_pages=1,
+            prev_url=None,
+            next_url=None,
+        )
+        (DIST_DIR / "index.html").write_text(index_html, encoding="utf-8")
+        print("   ✅ index.html")
 
     if EXPLORER_ENABLED:
         explorer_template = env.get_template("explorer.html")

@@ -35,6 +35,10 @@ extensions = [
 enabled = true
 expose_in_nav = true
 
+[index]
+paginate = false       # 是否启用首页分页
+per_page = 50          # 每页显示的文章数
+
 [task_markers]
 # "text"  = 原始 [ ], [-], [x], [!], [~] 彩色 CSS 徽章（默认）
 # "emoji" = 🔲 🔄 ✅ 🚫 ⏸️ Unicode emoji 替换

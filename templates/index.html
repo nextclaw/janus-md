@@ -38,4 +38,22 @@
   </a>
   {% endfor %}
 </div>
+
+{% if total_pages > 1 %}
+<nav class="pagination" aria-label="Page navigation">
+  {% if prev_url %}
+  <a href="{{ prev_url }}" class="pagination-link pagination-prev">← Previous</a>
+  {% else %}
+  <span class="pagination-link pagination-prev disabled">← Previous</span>
+  {% endif %}
+
+  <span class="pagination-info">Page {{ page_num }} / {{ total_pages }}</span>
+
+  {% if next_url %}
+  <a href="{{ next_url }}" class="pagination-link pagination-next">Next →</a>
+  {% else %}
+  <span class="pagination-link pagination-next disabled">Next →</span>
+  {% endif %}
+</nav>
+{% endif %}
 {% endblock %}
