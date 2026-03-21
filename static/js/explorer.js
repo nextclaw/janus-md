@@ -108,7 +108,7 @@
     folder.setAttribute('tabindex', '0');
     folder.setAttribute('aria-expanded', 'false');
     folder.innerHTML =
-      `<span class="folder-name">${escapeHtml(node.name)}</span>` +
+      `<span class="folder-name">${escapeHtml(node.title || node.name)}</span>` +
       `<span class="folder-count">${countLeaves(node)}</span>`;
 
     const childrenContainer = document.createElement('div');

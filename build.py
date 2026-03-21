@@ -429,7 +429,24 @@ def build_explorer_tree(articles: list[dict]) -> dict:
             }
         )
 
+    _resolve_folder_titles(root)
     return root
+
+
+def _resolve_folder_titles(node: dict) -> None:
+    """Derive folder display titles from _toc / _index children."""
+    if "children" not in node:
+        return
+    for child in node["children"]:
+        if "children" in child:
+            # It's a folder — look for _toc or _index child to get title
+            for leaf in child["children"]:
+                if leaf.get("slug") and leaf.get("name") in ("_toc", "_index"):
+                    title = leaf.get("title", "")
+                    if title and title != leaf["name"]:
+                        child["title"] = title
+                    break
+            _resolve_folder_titles(child)
 
 
 # ── Structured data builders ────────────────────────────────────────────────
