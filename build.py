@@ -31,6 +31,7 @@ import pymdownx.emoji
 import yaml
 from jinja2 import Environment, FileSystemLoader
 from markdown import Extension
+from markdown.preprocessors import Preprocessor
 from markdown.treeprocessors import Treeprocessor
 
 
@@ -148,6 +149,39 @@ class TaskStatusTreeprocessor(Treeprocessor):
 class TaskStatusExtension(Extension):
     def extendMarkdown(self, md):
         md.treeprocessors.register(TaskStatusTreeprocessor(md), "task_status", 5)
+
+
+# ── Custom Markdown Extension: Obsidian Wiki Links ─────────────────────────
+
+_WIKILINK_PATTERN = re.compile(r"\[\[([^\]|]+?)(?:\|([^\]]+?))?\]\]")
+
+
+class WikiLinkPreprocessor(Preprocessor):
+    """Convert Obsidian [[path|title]] links to standard Markdown links."""
+
+    def run(self, lines: list[str]) -> list[str]:
+        return [self._process_line(line) for line in lines]
+
+    def _process_line(self, line: str) -> str:
+        return _WIKILINK_PATTERN.sub(self._replace_match, line)
+
+    @staticmethod
+    def _replace_match(match: re.Match) -> str:
+        path = match.group(1).strip()
+        title = (match.group(2) or path).strip()
+        # Remove .md suffix if present
+        if path.endswith(".md"):
+            path = path[:-3]
+        # Build URL: ensure leading / and trailing /
+        url = path if path.startswith("/") else f"/{path}"
+        if not url.endswith("/"):
+            url += "/"
+        return f"[{title}]({url})"
+
+
+class WikiLinkExtension(Extension):
+    def extendMarkdown(self, md):
+        md.preprocessors.register(WikiLinkPreprocessor(md), "wikilinks", 30)
 
 
 # ── Metadata helpers ────────────────────────────────────────────────────────
@@ -280,6 +314,7 @@ def build_markdown_converter() -> markdown.Markdown:
         if required_extension not in extensions:
             extensions.append(required_extension)
     extensions.append(TaskStatusExtension())
+    extensions.append(WikiLinkExtension())
 
     return markdown.Markdown(
         extensions=extensions,

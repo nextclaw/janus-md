@@ -80,6 +80,13 @@ def greet(name: str) -> str:
 print(greet("Janus"))
 ```
 
+## Wiki Links (Obsidian-compatible)
+
+Link to other articles using Obsidian syntax:
+
+- [[meta/roadmap|Project Roadmap]] — with display title
+- [[welcome]] — without display title
+
 ## Next Steps
 
 - [x] Clone the template

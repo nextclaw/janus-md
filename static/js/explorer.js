@@ -26,18 +26,17 @@
 
   function sortChildren(children) {
     return children.slice().sort((a, b) => {
+      const aUnderscore = a.name.startsWith('_');
+      const bUnderscore = b.name.startsWith('_');
+      if (aUnderscore !== bUnderscore) {
+        return aUnderscore ? -1 : 1;
+      }
       const aIsFolder = !a.slug;
       const bIsFolder = !b.slug;
       if (aIsFolder !== bIsFolder) {
-        return aIsFolder ? -1 : 1;
+        return aIsFolder ? 1 : -1;
       }
-      if (aIsFolder) {
-        return a.name.localeCompare(b.name);
-      }
-      if (a.date && b.date && a.date !== b.date) {
-        return a.date > b.date ? -1 : 1;
-      }
-      return (a.title || a.name).localeCompare(b.title || b.name);
+      return a.name.localeCompare(b.name);
     });
   }
 
