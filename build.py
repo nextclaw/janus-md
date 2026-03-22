@@ -77,6 +77,9 @@ _index_cfg = _cfg.get("index", {})
 INDEX_PAGINATE = bool(_index_cfg.get("paginate", False))
 INDEX_PER_PAGE = int(_index_cfg.get("per_page", 50))
 
+_article_cfg = _cfg.get("article", {})
+ARTICLE_TOC_LINK = bool(_article_cfg.get("toc_link", False))
+
 
 # ── Custom Markdown Extension: Task Status Markers ─────────────────────────
 
@@ -328,7 +331,7 @@ def format_atom_timestamp(date_value: str | None, fallback: str | None = None) -
 
 def build_markdown_converter() -> markdown.Markdown:
     extensions = list(MD_EXTENSIONS)
-    for required_extension in ("pymdownx.emoji", "pymdownx.arithmatex"):
+    for required_extension in ("pymdownx.emoji", "pymdownx.arithmatex", "pymdownx.mark"):
         if required_extension not in extensions:
             extensions.append(required_extension)
     extensions.append(TaskStatusExtension())
@@ -743,6 +746,17 @@ def build():
         html_dir = DIST_DIR / slug
         html_dir.mkdir(parents=True, exist_ok=True)
         canonical_url = f"{SITE_URL}{article['html_path']}"
+
+        # Resolve _toc link for this article
+        toc_url = None
+        if ARTICLE_TOC_LINK:
+            slug_dir = posixpath.dirname(slug)
+            slug_basename = posixpath.basename(slug)
+            if slug_dir and slug_basename != "_toc":
+                toc_file = ARTICLES_DIR / slug_dir / "_toc.md"
+                if toc_file.is_file():
+                    toc_url = f"/{slug_dir}/_toc/"
+
         html = article_template.render(
             meta=article["meta"],
             slug=slug,
@@ -754,6 +768,7 @@ def build():
                 article["word_count"],
             ),
             word_count=article["word_count"],
+            toc_url=toc_url,
         )
         (html_dir / "index.html").write_text(html, encoding="utf-8")
         print(f"   ✅ {slug}/index.html")

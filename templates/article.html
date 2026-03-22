@@ -49,6 +49,7 @@
       {% if meta.updated %}<span class="meta-item">🔄 Updated: <time itemprop="dateModified" datetime="{{ meta.updated }}">{{ meta.updated }}</time></span>{% endif %}
       {% if meta.author_display %}<span class="meta-item" itemprop="author">✍️ {{ meta.author_display }}</span>{% endif %}
       <a class="meta-item" href="/{{ slug }}.md" title="View Markdown source">📄 .md</a>
+      {% if toc_url %}<a class="meta-item" href="{{ toc_url }}" title="Back to Table of Contents">📚 目录</a>{% endif %}
       {% if meta.tags %}
       <div class="article-tags">
         {% for tag in meta.tags %}

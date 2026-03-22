@@ -39,6 +39,9 @@ expose_in_nav = true
 paginate = false       # 是否启用首页分页
 per_page = 50          # 每页显示的文章数
 
+[article]
+toc_link = true        # 文章页是否显示同目录 _toc 回链（📚 目录）
+
 [task_markers]
 # "text"  = 原始 [ ], [-], [x], [!], [~] 彩色 CSS 徽章（默认）
 # "emoji" = 🔲 🔄 ✅ 🚫 ⏸️ Unicode emoji 替换
