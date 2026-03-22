@@ -354,6 +354,9 @@ def build_markdown_converter() -> markdown.Markdown:
             "pymdownx.arithmatex": {
                 "generic": True,
             },
+            "pymdownx.mark": {
+                "smart_mark": False,
+            },
         },
     )
 

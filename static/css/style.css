@@ -367,16 +367,13 @@ body {
 
 /* Highlight / Mark (==text==) */
 .prose mark {
-  background: linear-gradient(120deg, #fef08a 0%, #fde047 100%);
-  color: inherit;
-  padding: 1px 4px;
-  border-radius: var(--r-sm);
-  box-decoration-break: clone;
-  -webkit-box-decoration-break: clone;
+  background: transparent;
+  color: #ea580c;
+  font-weight: 500;
+  padding: 0;
 }
 [data-theme="dark"] .prose mark {
-  background: linear-gradient(120deg, #854d0e 0%, #a16207 100%);
-  color: #fef9c3;
+  color: #fb923c;
 }
 
 .prose ul, .prose ol {
