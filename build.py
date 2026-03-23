@@ -56,6 +56,7 @@ TEMPLATES_DIR = BASE_DIR / _cfg["build"]["templates_dir"]
 STATIC_DIR = BASE_DIR / _cfg["build"]["static_dir"]
 DIST_DIR = BASE_DIR / _cfg["build"]["dist_dir"]
 VERIFICATION_DIR = BASE_DIR / _cfg["build"].get("verification_dir", "verification")
+PAGES_DIR = BASE_DIR / _cfg["build"].get("pages_dir", "pages")
 
 FEED_MAX = _cfg["feed"].get("max_entries", 20)
 MD_EXTENSIONS = _cfg["markdown"]["extensions"]
@@ -705,6 +706,14 @@ def copy_verification_files() -> None:
         print(f"   ✅ {verification_file.name}")
 
 
+def copy_pages() -> None:
+    if not PAGES_DIR.exists() or not PAGES_DIR.is_dir():
+        return
+
+    shutil.copytree(PAGES_DIR, DIST_DIR, dirs_exist_ok=True)
+    print(f"   ✅ {PAGES_DIR.name}/ -> ./")
+
+
 # ── Main build ──────────────────────────────────────────────────────────────
 
 def build():
@@ -860,6 +869,7 @@ def build():
         print("   ✅ assets/")
 
     copy_verification_files()
+    copy_pages()
 
     print()
     print(f"🎉 Build complete! {len(articles)} article(s) → {DIST_DIR}")

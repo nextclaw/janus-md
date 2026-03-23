@@ -11,6 +11,7 @@ templates_dir = "templates"
 static_dir    = "static"
 dist_dir      = "dist"
 verification_dir = "verification"  # 根级验证文件目录，会复制到 dist/ 根目录
+pages_dir     = "pages"            # 纯静态页面目录，内容会直接复制到 dist/ 根目录
 
 [feed]
 max_entries = 20              # Atom feed 最多收录条目数
