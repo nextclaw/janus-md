@@ -353,10 +353,7 @@ def normalize_metadata(meta: dict | None) -> dict:
         else:
             normalized[key] = value
 
-    # display_date: prefer lastmod > date
-    if FEATURE_LASTMOD and normalized.get("lastmod"):
-        normalized["display_date"] = normalized["lastmod"]
-    elif normalized.get("date"):
+    if normalized.get("date"):
         normalized["display_date"] = normalized["date"]
     else:
         normalized["display_date"] = None
@@ -417,9 +414,14 @@ def format_atom_timestamp(date_value: str | None, fallback: str | None = None) -
 
 # ── Markdown conversion ─────────────────────────────────────────────────────
 
+
 def build_markdown_converter() -> markdown.Markdown:
     extensions = list(MD_EXTENSIONS)
-    for required_extension in ("pymdownx.emoji", "pymdownx.arithmatex", "pymdownx.mark"):
+    for required_extension in (
+        "pymdownx.emoji",
+        "pymdownx.arithmatex",
+        "pymdownx.mark",
+    ):
         if required_extension not in extensions:
             extensions.append(required_extension)
     extensions.append(TaskStatusExtension())
@@ -452,6 +454,7 @@ def build_markdown_converter() -> markdown.Markdown:
 
 # ── Article loading / tree building ─────────────────────────────────────────
 
+
 def slug_from_path(md_file: Path) -> str:
     rel = md_file.relative_to(ARTICLES_DIR)
     parts = list(rel.parts)
@@ -459,9 +462,7 @@ def slug_from_path(md_file: Path) -> str:
     return "/".join(parts)
 
 
-_FIRST_H1_RE = re.compile(
-    r"<h1[^>]*>(.*?)</h1>", re.IGNORECASE | re.DOTALL
-)
+_FIRST_H1_RE = re.compile(r"<h1[^>]*>(.*?)</h1>", re.IGNORECASE | re.DOTALL)
 
 
 def _strip_html_tags(html: str) -> str:
@@ -496,7 +497,10 @@ def load_articles() -> list[dict]:
             if first_h1:
                 h1_text = _strip_html_tags(first_h1.group(1))
                 if h1_text == title:
-                    html_content = html_content[: first_h1.start()] + html_content[first_h1.end() :]
+                    html_content = (
+                        html_content[: first_h1.start()]
+                        + html_content[first_h1.end() :]
+                    )
                     # Also remove the first <li> in TOC that corresponds to this h1
                     if toc_html:
                         toc_html = re.sub(
@@ -603,6 +607,7 @@ def _resolve_folder_titles(node: dict) -> None:
 
 
 # ── Structured data builders ────────────────────────────────────────────────
+
 
 def build_article_schema(meta: dict, canonical_url: str, word_count: int) -> str:
     author_names = meta.get("author_names") or normalize_author_names(SITE_AUTHOR)
@@ -745,6 +750,7 @@ def build_index_schema(articles: list[dict]) -> str:
 
 # ── Discovery file generation ───────────────────────────────────────────────
 
+
 def generate_sitemap(articles: list[dict]) -> str:
     lines = [
         '<?xml version="1.0" encoding="UTF-8"?>',
@@ -752,7 +758,9 @@ def generate_sitemap(articles: list[dict]) -> str:
         f"  <url><loc>{SITE_URL}/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>",
     ]
     for index, article in enumerate(articles):
-        lastmod_value = article["meta"].get("updated") or article["meta"].get("date", "")
+        lastmod_value = article["meta"].get("updated") or article["meta"].get(
+            "date", ""
+        )
         lastmod = f"<lastmod>{lastmod_value}</lastmod>" if lastmod_value else ""
         priority = "0.9" if index == 0 else "0.8"
         lines.append(
@@ -779,9 +787,11 @@ def generate_atom_feed(articles: list[dict]) -> str:
     for article in articles[:FEED_MAX]:
         title = html_escape(article["meta"].get("title", article["slug"]))
         updated = format_atom_timestamp(article["meta"].get("date"), now)
-        author_names = article["meta"].get("author_names") or normalize_author_names(
-            SITE_AUTHOR
-        ) or [SITE_NAME]
+        author_names = (
+            article["meta"].get("author_names")
+            or normalize_author_names(SITE_AUTHOR)
+            or [SITE_NAME]
+        )
         author_xml = "\n".join(
             f"    <author><name>{html_escape(name)}</name></author>"
             for name in author_names
@@ -793,7 +803,7 @@ def generate_atom_feed(articles: list[dict]) -> str:
             f"""  <entry>
     <title>{title}</title>
     <link href="{link}" rel="alternate" type="text/html"/>
-    <link href="{SITE_URL}{article['markdown_path']}" rel="alternate" type="text/markdown"/>
+    <link href="{SITE_URL}{article["markdown_path"]}" rel="alternate" type="text/markdown"/>
     <id>{link}</id>
     <updated>{updated}</updated>
 {author_xml}
@@ -862,6 +872,7 @@ def copy_pages() -> None:
 
 # ── Main build ──────────────────────────────────────────────────────────────
 
+
 def build():
     print(f"🔨 Building {SITE_NAME}...")
     print(f"   Articles: {ARTICLES_DIR}")
@@ -890,15 +901,19 @@ def build():
 
     # Category display names: capitalize, sort alphabetically
     nav_categories = sorted(
-        [{"slug": cat, "name": cat.title(), "count": len(arts)}
-         for cat, arts in category_map.items()],
+        [
+            {"slug": cat, "name": cat.title(), "count": len(arts)}
+            for cat, arts in category_map.items()
+        ],
         key=lambda c: c["slug"],
     )
 
     # Tag stats for tag cloud
     all_tags = sorted(
-        [{"slug": tag, "name": tag, "count": len(arts)}
-         for tag, arts in tag_map.items()],
+        [
+            {"slug": tag, "name": tag, "count": len(arts)}
+            for tag, arts in tag_map.items()
+        ],
         key=lambda t: (-t["count"], t["slug"]),
     )
 
@@ -1057,7 +1072,9 @@ def build():
                 canonical_url=f"{SITE_URL}/category/{cat_slug}/",
             )
             (cat_dir / "index.html").write_text(cat_html, encoding="utf-8")
-            print(f"   ✅ category/{cat_slug}/index.html ({len(cat_articles)} articles)")
+            print(
+                f"   ✅ category/{cat_slug}/index.html ({len(cat_articles)} articles)"
+            )
 
     # ── Tag pages ───────────────────────────────────────────────────────
     if TAGS_ENABLED and tag_map:
