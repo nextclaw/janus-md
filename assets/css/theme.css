@@ -1,0 +1,31 @@
+/* ── Janus-MD Theme Override ──────────────────────────────────────────────────
+   Fork 后修改此文件即可全局换肤，无需碰 style.css。
+   仅覆盖 CSS Custom Properties，保持上游一键同步。
+
+   用法: 取消注释并修改你需要的变量即可。
+   完整变量列表参见 style.css 中 :root 和 [data-theme="dark"] 段。
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* ── Light Mode Overrides ── */
+/* :root {
+  --c-bg: #fafbfc;
+  --c-bg-card: #ffffff;
+  --c-text: #1a1a2e;
+  --c-accent: #6366f1;
+  --c-accent-hover: #4f46e5;
+  --c-link: #4f46e5;
+  --c-link-hover: #4338ca;
+  --font-sans: 'Inter', 'Noto Sans SC', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --content-width: 48rem;
+  --page-width: 64rem;
+} */
+
+/* ── Dark Mode Overrides ── */
+/* [data-theme="dark"] {
+  --c-bg: #0f172a;
+  --c-bg-card: #1e293b;
+  --c-text: #e2e8f0;
+  --c-accent: #818cf8;
+  --c-link: #818cf8;
+} */

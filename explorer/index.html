@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+  <title>Explorer | My Site</title>
+  <meta name="description" content="Internal article explorer for browsing the content tree." />
+  <meta name="robots" content="noindex, nofollow, noarchive" />
+  
+  
+
+  <link rel="canonical" href="/explorer/" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Explorer | My Site" />
+  <meta property="og:description" content="Internal article explorer for browsing the content tree." />
+  <meta property="og:site_name" content="My Site" />
+  <meta property="og:url" content="/explorer/" />
+  
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Explorer | My Site" />
+  <meta name="twitter:description" content="Internal article explorer for browsing the content tree." />
+  
+
+  
+
+  <link rel="alternate" type="application/atom+xml" title="My Site Feed" href="/feed.xml" />
+
+  <link rel="stylesheet" href="/assets/css/style.css?v=eaa0d737" />
+  <link rel="stylesheet" href="/assets/css/codehilite.css?v=75f39ed9" />
+  <link rel="stylesheet" href="/assets/css/theme.css?v=0eb4995b" />
+  <link rel="stylesheet" href="/assets/css/custom.css?v=df0a172f" />
+
+  
+  <link rel="stylesheet" href="/assets/css/explorer.css" />
+
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <a href="/" class="site-logo" aria-label="My Site home">
+        <span class="logo-icon">M</span>
+        <span>My Site</span>
+      </a>
+      <nav class="site-nav" aria-label="Main navigation">
+        <a href="/">Home</a>
+        
+        
+        <a href="/explorer/" title="Browse the article tree">Explorer</a>
+        
+        
+        <a href="/feed.xml" title="Atom feed">Feed</a>
+        <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme">🌙</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="site-main">
+    
+<section class="explorer-split" aria-label="Internal article explorer">
+  <aside class="explorer-sidebar">
+    <div class="sidebar-header">
+      <h1>Explorer</h1>
+      <p>Internal article browser</p>
+    </div>
+    <div id="explorer-root" class="explorer-tree"></div>
+  </aside>
+
+  <section class="explorer-content" id="explorer-content" aria-live="polite">
+    <div id="explorer-welcome" class="explorer-welcome">
+      <span class="welcome-icon">📂</span>
+      <p>Select an article to preview it here.</p>
+    </div>
+  </section>
+</section>
+<script>
+window.__JANUS_EXPLORER_TREE__ = {"children": [{"children": [{"date": "2026-03-14", "name": "roadmap", "slug": "meta/roadmap", "title": "Project Roadmap"}], "name": "meta"}, {"date": "2026-03-14", "name": "welcome", "slug": "welcome", "title": "Welcome to Janus-MD"}], "name": "root"};
+</script>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>
+      Powered by <a href="https://github.com/nextclaw/janus-md" target="_blank" rel="noopener">Janus-MD</a>
+      &middot; HTML for humans, Markdown for AI
+    </p>
+  </footer>
+
+  <script src="/assets/js/main.js?v=7fa4ef26"></script>
+  
+  <script src="/assets/js/explorer.js"></script>
+
+  
+  
+</body>
+</html>
