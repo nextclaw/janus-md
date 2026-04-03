@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}{{ category_name }} | {{ site_name }}{% endblock %}
+{% block description %}Articles in the {{ category_name }} category{% endblock %}
+{% block og_title %}{{ category_name }} — {{ site_name }}{% endblock %}
+{% block og_description %}Articles in the {{ category_name }} category{% endblock %}
+{% block twitter_title %}{{ category_name }} — {{ site_name }}{% endblock %}
+{% block twitter_description %}Articles in the {{ category_name }} category{% endblock %}
+
+{% block content %}
+<div class="page-hero">
+  <h1><span class="gradient-text">📁 {{ category_name }}</span></h1>
+  <p>{{ articles | length }} article(s) in this category</p>
+</div>
+
+<div class="article-grid">
+  {% for article in articles %}
+  <a href="{{ article.html_path }}" class="article-card">
+    <h2>{{ article.meta.title }}</h2>
+    <p class="card-desc">{{ article.meta.description }}</p>
+    <div class="card-meta">
+      <span>📅 {{ article.meta.display_date or article.meta.date }}</span>
+      {% if article.meta.author_display %}<span>✍️ {{ article.meta.author_display }}</span>{% endif %}
+      {% if article.meta.rating_stars %}
+      <span class="rating-stars">{{ article.meta.rating_stars }}</span>
+      {% endif %}
+      {% if article.meta.tags %}
+      <div class="article-tags">
+        {% for tag in article.meta.tags %}
+        <span class="tag">#{{ tag }}</span>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% endblock %}

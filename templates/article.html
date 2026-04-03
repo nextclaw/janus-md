@@ -21,6 +21,7 @@
 {% block og_extra %}
   <meta property="article:published_time" content="{{ meta.date }}" />
   {% if meta.updated %}<meta property="article:modified_time" content="{{ meta.updated }}" />{% endif %}
+  {% if meta.lastmod %}<meta property="article:modified_time" content="{{ meta.lastmod }}" />{% endif %}
   {% if meta.author_display %}<meta property="article:author" content="{{ meta.author_display }}" />{% endif %}
   {% if meta.tags %}{% for tag in meta.tags %}<meta property="article:tag" content="{{ tag }}" />
   {% endfor %}{% endif %}
@@ -42,26 +43,59 @@
 
 {% block content %}
 <article itemscope itemtype="https://schema.org/Article">
-  <header class="article-header">
-    <h1 itemprop="headline">{{ meta.title }}</h1>
-    <div class="article-meta">
-      <span class="meta-item">📅 <time itemprop="datePublished" datetime="{{ meta.date }}">{{ meta.date }}</time></span>
-      {% if meta.updated %}<span class="meta-item">🔄 Updated: <time itemprop="dateModified" datetime="{{ meta.updated }}">{{ meta.updated }}</time></span>{% endif %}
-      {% if meta.author_display %}<span class="meta-item" itemprop="author">✍️ {{ meta.author_display }}</span>{% endif %}
-      <a class="meta-item" href="/{{ slug }}.md" title="View Markdown source">📄 .md</a>
-      {% if toc_url %}<a class="meta-item" href="{{ toc_url }}" title="Back to Table of Contents">📚 目录</a>{% endif %}
-      {% if meta.tags %}
-      <div class="article-tags">
-        {% for tag in meta.tags %}
-        <span class="tag">#{{ tag }}</span>
-        {% endfor %}
-      </div>
-      {% endif %}
-    </div>
-  </header>
+  {% if feature_cover and meta.cover %}
+  <div class="article-cover">
+    <img src="{{ meta.cover }}" alt="{{ meta.title }}" loading="lazy" />
+  </div>
+  {% endif %}
 
-  <div class="prose" itemprop="articleBody">
-    {{ content | safe }}
+  <div class="article-layout{% if toc_html %} has-toc{% endif %}">
+    <div class="article-content">
+      <header class="article-header">
+        <h1 itemprop="headline">{{ meta.title }}</h1>
+        <div class="article-meta">
+          {% if meta.display_date %}
+          <span class="meta-item">📅 <time itemprop="datePublished" datetime="{{ meta.date }}">{{ meta.display_date }}</time></span>
+          {% endif %}
+          {% if feature_lastmod and meta.lastmod and meta.lastmod != meta.date %}
+          <span class="meta-item">🔄 <time itemprop="dateModified" datetime="{{ meta.lastmod }}">{{ meta.lastmod }}</time></span>
+          {% endif %}
+          {% if meta.author_display %}<span class="meta-item" itemprop="author">✍️ {{ meta.author_display }}</span>{% endif %}
+          {% if feature_rating and meta.rating_stars %}
+          <span class="meta-item rating-stars" title="Rating: {{ meta.rating }}/5">{{ meta.rating_stars }}</span>
+          {% endif %}
+          {% if meta.category %}
+          <a class="meta-item meta-category" href="/category/{{ meta.category }}/">📁 {{ meta.category | title }}</a>
+          {% endif %}
+          <a class="meta-item" href="/{{ slug }}.md" title="View Markdown source">📄 .md</a>
+          {% if toc_url %}<a class="meta-item" href="{{ toc_url }}" title="Back to Table of Contents">📚 目录</a>{% endif %}
+          {% if meta.tags %}
+          <div class="article-tags">
+            {% for tag in meta.tags %}
+            <a class="tag" href="/tags/{{ tag }}/">#{{ tag }}</a>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+      </header>
+
+      <div class="prose" itemprop="articleBody">
+        {{ content | safe }}
+      </div>
+    </div>
+
+    {% if toc_html %}
+    <aside class="toc-sidebar" id="tocSidebar">
+      <div class="toc-header">
+        <span>📑 目录</span>
+        <button class="toc-close" id="tocClose" aria-label="Close table of contents">✕</button>
+      </div>
+      <nav class="toc-nav" aria-label="Table of Contents">
+        {{ toc_html | safe }}
+      </nav>
+    </aside>
+    <button class="toc-toggle" id="tocToggle" aria-label="Toggle table of contents" title="目录">📑</button>
+    {% endif %}
   </div>
 </article>
 {% endblock %}

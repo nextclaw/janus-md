@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Tags | {{ site_name }}{% endblock %}
+{% block description %}Browse articles by tag{% endblock %}
+{% block og_title %}Tags — {{ site_name }}{% endblock %}
+{% block og_description %}Browse articles by tag{% endblock %}
+{% block twitter_title %}Tags — {{ site_name }}{% endblock %}
+{% block twitter_description %}Browse articles by tag{% endblock %}
+
+{% block content %}
+<div class="page-hero">
+  <h1><span class="gradient-text">🏷️ Tags</span></h1>
+  <p>{{ all_tags | length }} tags across all articles</p>
+</div>
+
+<div class="tag-cloud">
+  {% for tag in all_tags %}
+  <a href="/tags/{{ tag.slug }}/" class="tag-cloud-item">
+    <span class="tag-name">#{{ tag.name }}</span>
+    <span class="tag-count">{{ tag.count }}</span>
+  </a>
+  {% endfor %}
+</div>
+{% endblock %}

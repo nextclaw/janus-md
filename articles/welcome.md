@@ -4,6 +4,9 @@ date: 2026-03-14
 description: "A dual-state static site template — HTML for humans, Markdown for AI."
 author: "Janus-MD"
 tags: [intro, getting-started]
+category: "guide"
+rating: 5
+toc: true
 draft: false
 ---
 

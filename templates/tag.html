@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}#{{ tag_name }} | {{ site_name }}{% endblock %}
+{% block description %}Articles tagged with #{{ tag_name }}{% endblock %}
+{% block og_title %}#{{ tag_name }} — {{ site_name }}{% endblock %}
+{% block og_description %}Articles tagged with #{{ tag_name }}{% endblock %}
+{% block twitter_title %}#{{ tag_name }} — {{ site_name }}{% endblock %}
+{% block twitter_description %}Articles tagged with #{{ tag_name }}{% endblock %}
+
+{% block content %}
+<div class="page-hero">
+  <h1><span class="gradient-text">#{{ tag_name }}</span></h1>
+  <p>{{ articles | length }} article(s) with this tag</p>
+  <p style="margin-top: var(--sp-sm);"><a href="/tags/" class="back-to-tags">← All Tags</a></p>
+</div>
+
+<div class="article-grid">
+  {% for article in articles %}
+  <a href="{{ article.html_path }}" class="article-card">
+    <h2>{{ article.meta.title }}</h2>
+    <p class="card-desc">{{ article.meta.description }}</p>
+    <div class="card-meta">
+      <span>📅 {{ article.meta.display_date or article.meta.date }}</span>
+      {% if article.meta.author_display %}<span>✍️ {{ article.meta.author_display }}</span>{% endif %}
+      {% if article.meta.category %}
+      <span>📁 {{ article.meta.category | title }}</span>
+      {% endif %}
+      {% if article.meta.tags %}
+      <div class="article-tags">
+        {% for tag in article.meta.tags %}
+        <span class="tag">#{{ tag }}</span>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -31,10 +31,10 @@
 
   <link rel="alternate" type="application/atom+xml" title="{{ site_name }} Feed" href="/feed.xml" />
 
-  <link rel="stylesheet" href="/assets/css/style.css" />
-  <link rel="stylesheet" href="/assets/css/codehilite.css" />
-  {% if theme_css_exists %}<link rel="stylesheet" href="/assets/css/theme.css" />{% endif %}
-  {% if custom_css_exists %}<link rel="stylesheet" href="/assets/css/custom.css" />{% endif %}
+  <link rel="stylesheet" href="/assets/css/style.css{{ asset_hash.style }}" />
+  <link rel="stylesheet" href="/assets/css/codehilite.css{{ asset_hash.codehilite }}" />
+  {% if theme_css_exists %}<link rel="stylesheet" href="/assets/css/theme.css{{ asset_hash.theme }}" />{% endif %}
+  {% if custom_css_exists %}<link rel="stylesheet" href="/assets/css/custom.css{{ asset_hash.custom }}" />{% endif %}
 
   {% block head_extra %}{% endblock %}
 </head>
@@ -47,8 +47,14 @@
       </a>
       <nav class="site-nav" aria-label="Main navigation">
         <a href="/">Home</a>
+        {% for cat in nav_categories %}
+        <a href="/category/{{ cat.slug }}/" title="{{ cat.name }} ({{ cat.count }})">{{ cat.name }}</a>
+        {% endfor %}
         {% if explorer_enabled and explorer_expose_in_nav %}
         <a href="/explorer/" title="Browse the article tree">Explorer</a>
+        {% endif %}
+        {% if tags_enabled %}
+        <a href="/tags/" title="Browse by tags">Tags</a>
         {% endif %}
         <a href="/feed.xml" title="Atom feed">Feed</a>
         <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme">🌙</button>
@@ -67,7 +73,31 @@
     </p>
   </footer>
 
-  <script src="/assets/js/main.js"></script>
+  <script src="/assets/js/main.js{{ asset_hash.main_js }}"></script>
   {% block scripts %}{% endblock %}
+  {% if has_math %}
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['\\(', '\\)'], ['$', '$']],
+        displayMath: [['\\[', '\\]'], ['$$', '$$']],
+        processEscapes: true,
+      },
+      options: {
+        skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+      },
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  {% endif %}
+  {% if has_mermaid %}
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default',
+    });
+  </script>
+  {% endif %}
 </body>
 </html>

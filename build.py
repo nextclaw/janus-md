@@ -16,6 +16,7 @@ generates:
   - dist/robots.txt             Crawler hints
 """
 
+import hashlib
 import json
 import os
 import posixpath
@@ -80,6 +81,20 @@ INDEX_PER_PAGE = int(_index_cfg.get("per_page", 50))
 
 _article_cfg = _cfg.get("article", {})
 ARTICLE_TOC_LINK = bool(_article_cfg.get("toc_link", False))
+
+_features_cfg = _cfg.get("features", {})
+FEATURE_TOC = bool(_features_cfg.get("toc", False))
+FEATURE_RATING = bool(_features_cfg.get("rating", False))
+FEATURE_LASTMOD = bool(_features_cfg.get("lastmod", False))
+FEATURE_COVER = bool(_features_cfg.get("cover", False))
+FEATURE_MATH = bool(_features_cfg.get("math", True))
+FEATURE_MERMAID = bool(_features_cfg.get("mermaid", True))
+
+_categories_cfg = _cfg.get("categories", {})
+CATEGORIES_EXPOSE_IN_NAV = bool(_categories_cfg.get("expose_in_nav", False))
+
+_tags_cfg = _cfg.get("tags", {})
+TAGS_ENABLED = bool(_tags_cfg.get("enabled", False))
 
 
 # ── Custom Markdown Extension: Task Status Markers ─────────────────────────
@@ -158,6 +173,40 @@ class TaskStatusTreeprocessor(Treeprocessor):
 class TaskStatusExtension(Extension):
     def extendMarkdown(self, md):
         md.treeprocessors.register(TaskStatusTreeprocessor(md), "task_status", 5)
+
+
+# ── Custom Markdown Extension: Mermaid Diagrams ────────────────────────────
+
+_MERMAID_FENCE_RE = re.compile(
+    r"^(`{3,})\s*mermaid\s*$\n(.*?)^\1\s*$",
+    re.MULTILINE | re.DOTALL,
+)
+
+
+class MermaidPreprocessor(Preprocessor):
+    """Convert fenced mermaid code blocks to raw HTML before Markdown processing.
+
+    This runs *before* codehilite / fenced_code, so mermaid blocks never get
+    Pygments-highlighted.  The raw diagram source is wrapped in
+    ``<pre class="mermaid">…</pre>`` which mermaid.js picks up on the client.
+    """
+
+    def run(self, lines: list[str]) -> list[str]:
+        text = "\n".join(lines)
+        text = _MERMAID_FENCE_RE.sub(self._replace, text)
+        return text.split("\n")
+
+    @staticmethod
+    def _replace(match: re.Match) -> str:
+        diagram = html_escape(match.group(2).strip())
+        # Use Markdown's HTML block syntax — a blank-line-separated raw block
+        return f'\n<pre class="mermaid">\n{diagram}\n</pre>\n'
+
+
+class MermaidExtension(Extension):
+    def extendMarkdown(self, md):
+        # Priority 35 — higher than fenced_code (25) and codehilite (20)
+        md.preprocessors.register(MermaidPreprocessor(md), "mermaid", 35)
 
 
 # ── Custom Markdown Extension: Obsidian Wiki Links ─────────────────────────
@@ -277,15 +326,40 @@ def normalize_faq_items(faq_value) -> list[dict]:
     return faq_items
 
 
+def normalize_rating(rating_value) -> str | None:
+    """Convert numeric rating to star string: ⭐️ for full, ☆ for empty."""
+    if rating_value is None:
+        return None
+    try:
+        value = float(rating_value)
+    except (TypeError, ValueError):
+        return None
+    if value < 0:
+        value = 0
+    if value > 5:
+        value = 5
+    full = int(value)
+    empty = 5 - full
+    return "⭐" * full + "☆" * empty
+
+
 def normalize_metadata(meta: dict | None) -> dict:
     normalized = dict(meta or {})
 
-    for key in ("date", "updated"):
+    for key in ("date", "updated", "lastmod"):
         value = normalize_date_like(normalized.get(key))
         if value is None:
             normalized.pop(key, None)
         else:
             normalized[key] = value
+
+    # display_date: prefer lastmod > date
+    if FEATURE_LASTMOD and normalized.get("lastmod"):
+        normalized["display_date"] = normalized["lastmod"]
+    elif normalized.get("date"):
+        normalized["display_date"] = normalized["date"]
+    else:
+        normalized["display_date"] = None
 
     tags = normalize_tags(normalized.get("tags"))
     if tags:
@@ -305,6 +379,19 @@ def normalize_metadata(meta: dict | None) -> dict:
     if author_names:
         normalized["author_names"] = author_names
         normalized["author_display"] = ", ".join(author_names)
+
+    # Rating stars
+    if FEATURE_RATING and normalized.get("rating") is not None:
+        normalized["rating_stars"] = normalize_rating(normalized["rating"])
+    else:
+        normalized.pop("rating_stars", None)
+
+    # Category — use as-is from frontmatter (strip, lowercase)
+    cat = normalized.get("category")
+    if cat:
+        normalized["category"] = str(cat).strip().lower()
+    else:
+        normalized.pop("category", None)
 
     return normalized
 
@@ -336,6 +423,7 @@ def build_markdown_converter() -> markdown.Markdown:
         if required_extension not in extensions:
             extensions.append(required_extension)
     extensions.append(TaskStatusExtension())
+    extensions.append(MermaidExtension())
     extensions.append(WikiLinkExtension())
 
     return markdown.Markdown(
@@ -371,6 +459,16 @@ def slug_from_path(md_file: Path) -> str:
     return "/".join(parts)
 
 
+_FIRST_H1_RE = re.compile(
+    r"<h1[^>]*>(.*?)</h1>", re.IGNORECASE | re.DOTALL
+)
+
+
+def _strip_html_tags(html: str) -> str:
+    """Remove HTML tags and return plain text."""
+    return re.sub(r"<[^>]+>", "", html).strip()
+
+
 def load_articles() -> list[dict]:
     articles: list[dict] = []
     md = build_markdown_converter()
@@ -388,6 +486,51 @@ def load_articles() -> list[dict]:
         wikilink_prep.article_dir = slug_dir
         html_content = md.convert(body)
 
+        # Extract TOC HTML generated by python-markdown toc extension
+        toc_html = getattr(md, "toc", "")
+
+        # ── Title dedup: remove first <h1> if it matches frontmatter title ──
+        title = meta.get("title", "")
+        if title:
+            first_h1 = _FIRST_H1_RE.search(html_content)
+            if first_h1:
+                h1_text = _strip_html_tags(first_h1.group(1))
+                if h1_text == title:
+                    html_content = html_content[: first_h1.start()] + html_content[first_h1.end() :]
+                    # Also remove the first <li> in TOC that corresponds to this h1
+                    if toc_html:
+                        toc_html = re.sub(
+                            r"<li>\s*<a[^>]*>" + re.escape(title) + r"</a>\s*(?:<ul>)?",
+                            lambda m: "<ul>" if m.group(0).endswith("<ul>") else "",
+                            toc_html,
+                            count=1,
+                        )
+
+        # ── Math / Mermaid on-demand detection ──
+        # Priority: frontmatter > global config default > content detection
+        article_math = meta.get("math")
+        if article_math is not None:
+            has_math = bool(article_math)
+        elif FEATURE_MATH:
+            has_math = "arithmatex" in html_content
+        else:
+            has_math = False
+
+        article_mermaid = meta.get("mermaid")
+        if article_mermaid is not None:
+            has_mermaid = bool(article_mermaid)
+        elif FEATURE_MERMAID:
+            has_mermaid = 'class="mermaid"' in html_content
+        else:
+            has_mermaid = False
+
+        # ── TOC enable: frontmatter toc > global FEATURE_TOC ──
+        article_toc = meta.get("toc")
+        if article_toc is not None:
+            show_toc = bool(article_toc) and bool(toc_html)
+        else:
+            show_toc = FEATURE_TOC and bool(toc_html)
+
         articles.append(
             {
                 "slug": slug,
@@ -397,6 +540,9 @@ def load_articles() -> list[dict]:
                 "body": body,
                 "raw": raw,
                 "html": html_content,
+                "toc_html": toc_html if show_toc else "",
+                "has_math": has_math,
+                "has_mermaid": has_mermaid,
                 "word_count": len(body.split()),
                 "source_file": md_file,
             }
@@ -732,6 +878,37 @@ def build():
         print(f"   • {article['slug']} — {article['meta'].get('title', '(no title)')}")
     print()
 
+    # ── Collect categories and tags ──────────────────────────────────────
+    category_map: dict[str, list[dict]] = {}
+    tag_map: dict[str, list[dict]] = {}
+    for article in articles:
+        cat = article["meta"].get("category")
+        if cat:
+            category_map.setdefault(cat, []).append(article)
+        for tag in article["meta"].get("tags", []):
+            tag_map.setdefault(tag, []).append(article)
+
+    # Category display names: capitalize, sort alphabetically
+    nav_categories = sorted(
+        [{"slug": cat, "name": cat.title(), "count": len(arts)}
+         for cat, arts in category_map.items()],
+        key=lambda c: c["slug"],
+    )
+
+    # Tag stats for tag cloud
+    all_tags = sorted(
+        [{"slug": tag, "name": tag, "count": len(arts)}
+         for tag, arts in tag_map.items()],
+        key=lambda t: (-t["count"], t["slug"]),
+    )
+
+    if nav_categories:
+        print(f"📂 Categories: {', '.join(c['slug'] for c in nav_categories)}")
+    if all_tags:
+        print(f"🏷️  Tags: {len(all_tags)} unique tag(s)")
+    if nav_categories or all_tags:
+        print()
+
     env = Environment(
         loader=FileSystemLoader(str(TEMPLATES_DIR)),
         autoescape=True,
@@ -739,6 +916,23 @@ def build():
 
     theme_css_exists = bool(THEME_CSS_PATH) and (BASE_DIR / THEME_CSS_PATH).is_file()
     custom_css_exists = bool(CUSTOM_CSS_PATH) and (BASE_DIR / CUSTOM_CSS_PATH).is_file()
+
+    # Build content-hash for cache-busting static assets
+    def _asset_hash(rel_path: str) -> str:
+        full = STATIC_DIR / rel_path
+        if full.is_file():
+            digest = hashlib.sha256(full.read_bytes()).hexdigest()[:8]
+            return f"?v={digest}"
+        return ""
+
+    asset_hash = {
+        "style": _asset_hash("css/style.css"),
+        "codehilite": _asset_hash("css/codehilite.css"),
+        "theme": _asset_hash("css/theme.css"),
+        "custom": _asset_hash("css/custom.css"),
+        "main_js": _asset_hash("js/main.js"),
+    }
+
     env.globals.update(
         site_name=SITE_NAME,
         site_description=SITE_DESCRIPTION,
@@ -750,6 +944,12 @@ def build():
         explorer_expose_in_nav=EXPLORER_EXPOSE_IN_NAV,
         theme_css_exists=theme_css_exists,
         custom_css_exists=custom_css_exists,
+        asset_hash=asset_hash,
+        nav_categories=nav_categories if CATEGORIES_EXPOSE_IN_NAV else [],
+        feature_cover=FEATURE_COVER,
+        feature_rating=FEATURE_RATING,
+        feature_lastmod=FEATURE_LASTMOD,
+        tags_enabled=TAGS_ENABLED,
     )
 
     article_template = env.get_template("article.html")
@@ -781,6 +981,9 @@ def build():
             ),
             word_count=article["word_count"],
             toc_url=toc_url,
+            toc_html=article["toc_html"],
+            has_mermaid=article["has_mermaid"],
+            has_math=article["has_math"],
         )
         (html_dir / "index.html").write_text(html, encoding="utf-8")
         print(f"   ✅ {slug}/index.html")
@@ -840,6 +1043,46 @@ def build():
         )
         (DIST_DIR / "index.html").write_text(index_html, encoding="utf-8")
         print("   ✅ index.html")
+
+    # ── Category pages ──────────────────────────────────────────────────
+    if category_map:
+        category_template = env.get_template("category.html")
+        for cat_slug, cat_articles in category_map.items():
+            cat_dir = DIST_DIR / "category" / cat_slug
+            cat_dir.mkdir(parents=True, exist_ok=True)
+            cat_html = category_template.render(
+                category_name=cat_slug.title(),
+                category_slug=cat_slug,
+                articles=cat_articles,
+                canonical_url=f"{SITE_URL}/category/{cat_slug}/",
+            )
+            (cat_dir / "index.html").write_text(cat_html, encoding="utf-8")
+            print(f"   ✅ category/{cat_slug}/index.html ({len(cat_articles)} articles)")
+
+    # ── Tag pages ───────────────────────────────────────────────────────
+    if TAGS_ENABLED and tag_map:
+        tags_index_template = env.get_template("tags.html")
+        tag_detail_template = env.get_template("tag.html")
+
+        tags_dir = DIST_DIR / "tags"
+        tags_dir.mkdir(parents=True, exist_ok=True)
+        tags_html = tags_index_template.render(
+            all_tags=all_tags,
+            canonical_url=f"{SITE_URL}/tags/",
+        )
+        (tags_dir / "index.html").write_text(tags_html, encoding="utf-8")
+        print(f"   ✅ tags/index.html ({len(all_tags)} tags)")
+
+        for tag_slug, tag_articles in tag_map.items():
+            tag_dir = tags_dir / tag_slug
+            tag_dir.mkdir(parents=True, exist_ok=True)
+            tag_html = tag_detail_template.render(
+                tag_name=tag_slug,
+                articles=tag_articles,
+                canonical_url=f"{SITE_URL}/tags/{tag_slug}/",
+            )
+            (tag_dir / "index.html").write_text(tag_html, encoding="utf-8")
+        print(f"   ✅ tags/<tag>/index.html ({len(tag_map)} tag pages)")
 
     if EXPLORER_ENABLED:
         explorer_template = env.get_template("explorer.html")
